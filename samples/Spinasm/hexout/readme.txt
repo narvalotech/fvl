@@ -1,0 +1,1 @@
+This directory is where SpinAsm will place Intel Hex file type output. 

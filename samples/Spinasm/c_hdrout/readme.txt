@@ -1,0 +1,1 @@
+This directory is where SpinAsm will place C Header file type output. 

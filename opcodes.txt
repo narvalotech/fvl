@@ -1,0 +1,106 @@
+;; From the help menu of SpinAsm
+;; Opcodes
+
+RDA 	DRAM[ADDR] * C + ACC
+RMPA 	DRAM[PNTR[N]] * C + ACC
+WRA 	ACC->DRAM[ADDR] , ACC * C
+WRAP 	ACC->DRAM[ADDR] ,(ACC * C) + LR
+RDAX 	C * REG[ADDR] + ACC
+RDFX 	(ACC - REG[ADDR]) * C + REG[ADDR]
+WRAX 	ACC->REG[ADDR] , C * ACC
+WRHX 	ACC->REG[ADDR] , (ACC * C)+PACC
+WRLX 	ACC->REG[ADDR] , (PACC - ACC) * C + PACC
+MAXX 	MAX( |REG[ADDR]  *  C| , |ACC|)
+MULX 	ACC * REG[ADDR]
+LOG 	C * LOG(|ACC|) + D
+EXP 	C * EXP(ACC) + D
+SOF 	 C + ACC + D
+AND 	ACC & MASK
+OR 	ACC | MASK
+XOR 	ACC ^ MASK
+SKP	SKIP [CONDITION] LINES
+WLDS 	LOAD FREQ & AMPLITUDE INTO SIN LFO
+WLDR 	LOAD FREQ & AMPLITUDE INTO RAMP LFO
+JAM 	RESET A SELECTED LFO
+CHO 	CHORUS COMMAND
+NOP	NO OPERATION
+NOT	LOGICAL NOT
+CLR	CLEAR ACC
+ABSA	ACC = ABS(ACC)
+LDAX	ACC = REGISTER
+
+;; Registers (instructions that end with 'X')
+
+  SIN0_RATE	@ 0x00 (0)	Sine LFO 0 rate
+  SIN0_RANGE	@ 0x01 (1)	Sine LFO 0 range
+  SIN1_RATE	@ 0x02 (2)	Sine LFO 1 rate
+  SIN1_RANGE	@ 0x03 (3)	Sine LFO 1 range
+  RMP0_RATE	@ 0x04 (4)	Ramp LFO 0 rate
+  RMP0_RANGE	@ 0x05 (5)	Ramp LFO 0 range
+  RMP1_RATE	@ 0x06 (6)	Ramp LFO 1 rate
+  RMP1_RANGE	@ 0x07 (7)	Ramp LFO 1 range
+  POT0	@ 0x10 (16)	Pot 0 input register
+  POT1	@ 0x11 (17)	Pot 1 input register
+  POT2	@ 0x12 (18)	Pot 2 input register
+  ADCL	@ 0x14 (20)	ADC input register left channel
+  ADCR	@ 0x15 (21)	ADC input register  right channel
+  DACL	@ 0x16 (22)	DAC output register  left channel
+  DACR	@ 0x17 (23)	DAC output register  right channel
+  ADDR_PTR	@ 0x18 (24)	Used with 'RMPA' instruction for indirect read
+
+  REG0	@ 0x20 (32)	Register 00
+  REG1	@ 0x21 (33)	Register 01
+  REG2	@ 0x22 (34)	Register 02
+  REG3	@ 0x23 (35)	Register 03
+  REG4	@ 0x24 (36)	Register 04
+  REG5	@ 0x25 (37)	Register 05
+  REG6	@ 0x26 (38)	Register 06
+  REG7	@ 0x27 (39)	Register 07
+  REG8	@ 0x28 (40)	Register 08
+  REG9	@ 0x29 (41)	Register 09
+  REG10	@ 0x2A (42)	Register 10
+  REG11	@ 0x2B (43)	Register 11
+  REG12	@ 0x2C (44)	Register 12
+  REG13	@ 0x2D (45)	Register 13
+  REG14	@ 0x2E (46)	Register 14
+  REG15	@ 0x2F (47)	Register 15
+  REG16	@ 0x30 (48)	Register 16
+  REG17	@ 0x31 (49)	Register 17
+  REG18	@ 0x32 (50)	Register 18
+  REG19	@ 0x33 (51)	Register 19
+  REG20	@ 0x34 (52)	Register 20
+  REG21	@ 0x35 (53)	Register 21
+  REG22	@ 0x36 (54)	Register 22
+  REG23	@ 0x37 (55)	Register 23
+  REG24	@ 0x38 (56)	Register 24
+  REG25	@ 0x39 (57)	Register 25
+  REG26	@ 0x3A (58)	Register 26
+  REG27	@ 0x3B (59)	Register 27
+  REG28	@ 0x3C (60)	Register 28
+  REG29	@ 0x3D (61)	Register 29
+  REG30	@ 0x3E (62)	Register 30
+  REG31	@ 0x3F (63)	Register 31
+
+;; Reserved words
+
+  SIN0	@ 0x00 (0)	USED with  'CHO' :	SINE LFO 0
+  SIN1	@ 0x01 (1)	USED with  'CHO' :	SINE LFO 1
+  RMP0	@ 0x02 (2)	USED with  'CHO' :	RAMP LFO 0
+  RMP1	@ 0x03 (3)	USED with  'CHO' :	RAMP LFO 1
+  RDA	@ 0x00 (0)	USED with  'CHO' :	ACC += ( DRAM * COEFF)
+  SOF	@ 0x02 (2)	USED with  'CHO' :	ACC = ( ACC * LFO COEFF) + Constant
+  RDAL	@ 0x03 (3)	USED with  'CHO' :	Reads  value of selected LFO into the ACC
+  SIN	@ 0x00 (0)	USED with  'CHO' : SIN/COS from SINE LFO
+  COS	@ 0x01 (1)	USED with  'CHO' : SIN/COS from SINE LFO
+  REG	@ 0x02 (2)	USED with  'CHO' : Save LFO temp reg in LFO block
+  COMPC	@ 0x04 (4)	USED with  'CHO' : 2's comp : Generate 1-x for interpolate
+  COMPA	@ 0x08 (8)	USED with  'CHO' : 1's comp address offset (Generate SIN or COS)
+  RPTR2	@ 0x10 (16)	USED with  'CHO' : Add 1/2 to ramp to generate 2nd ramp for pitch shift
+  NA	@ 0x20 (32)	USED with  'CHO' :	Do NOT add LFO to address and select cross-face coefficient
+  RUN	@ 0x80000000	USED with  'SKP' : Skip if NOT FIRST time through program
+  ZRC	@ 0x40000000	USED with 'SKP' : Skip On Zero Crossing
+  ZRO	@ 0x20000000	USED with 'SKP' : Skip if ACC  =  0
+  GEZ	@ 0x10000000	USED with 'SKP' : Skip if ACC is' >= 0'
+  NEG	@ 0x8000000	USED with 'SKP' : Skip if ACC is Negative
+  COS0	@ 0x08 (8)	USED with  'CHO' :	COSINE LFO 0
+  COS1	@ 0x09 (9)	USED with  'CHO' :	COSINE LFO 1
