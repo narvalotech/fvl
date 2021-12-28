@@ -1,0 +1,3 @@
+(and #x101) ; Some and instruction
+(sof 1.0 -0.5) ; Some sof instruction
+(sof -0 #xffab) ;; Some other sof instr (test list)

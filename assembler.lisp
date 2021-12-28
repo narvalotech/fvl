@@ -217,23 +217,70 @@
                    (if (logbitp i (opcode opcode)) #\1 #\0)))
     repr-str))
 
-(defun show-binary-instruction (inst)
-  "Same as get-instruction-coding, but with the actual parameter values .")
+;; FIXME: temp location for the opcode list
+(defparameter *fv1-opcodes* (make-array 1000 :adjustable t :fill-pointer 0))
 
 ;; Testing
-(defparameter *op-sof*
-  (make-opcode "SOF" #b01101
+(vector-push
+ (make-opcode 'sof #b01101
                "C * ACC + D"
                "SOF will multiply the current value in ACC with C and will then add the
   constant D to the result."
                '(("C" 16 16 "S1.14" nil)
-                 ("D" 5 11 "S.10"  nil))))
-(show-coding *op-sof*)
+                 ("D" 5 11 "S.10"  nil))) *fv1-opcodes*)
 
-(format nil "~5,'0B" (opcode *op-sof*)) ; Opcode part
-;; TODO: print namechar [width] times at [pos]
-(format nil "~C" (char (name (nth 0 (params *op-sof*))) 0)) ; TODO: param part
-(name (nth 1 (params *op-sof*)))
+(vector-push
+ (make-opcode 'and #b01110
+               "ACC & MASK"
+               "AND will perform a bitwise 'and' of the current ACC and the
+  specified 24b MASK."
+              '(("M" 8 24 "uint" nil))) *fv1-opcodes*)
 
-;; We'd like the source syntax to be like that
-;; (sof 1.0 -0.5)
+;; (print (mnemonic (aref *fv1-opcodes* 0)))
+
+;; Read test ASM file into a list
+(defparameter *asm-sexp*
+  (with-open-file
+      (stream "/home/john/Seafile/Projects/Hardware/FV1clip/software/assembler/testasm.fvl")
+    (loop for line = (read-line stream nil)
+          until (eq line nil) collect (read-from-string line))))
+
+;; (print *asm-sexp*)
+;; (eql 'sof (car (car *asm-sexp*)))
+
+;; Process a single opcode list
+;; loop across all possible opcodes until eql
+(defun process-instruction (inst)
+  (let* ((op
+          (loop for opcode across *fv1-opcodes*
+                until (eql (mnemonic opcode) (car inst))
+                finally (return opcode)))
+        (inst-word (logand #x0000001F (opcode op)))) ; 5-bit opcode
+    (loop for param in (params op)
+          counting T into i
+          do (setf inst-word
+                   (logior inst-word
+                           (encode-param param (nth i inst))))
+          finally (return (values inst-word op)))))
+
+;; (format nil "~B" (process-instruction (nth 0 *asm-sexp*)))
+
+;; Encode param depending on:
+;; - type/form
+;; - width
+;; - position
+;; TODO: take type into account, for now only encoding based on size + pos
+;; TODO: deal with non-int types
+(defun encode-param (param value)
+  (ash
+   (logand (1- (ash 1 (width param)))
+           value)
+   (pos param)))
+
+;; (show-binary-instruction (nth 0 *asm-sexp*))
+
+(defun show-binary-instruction (inst)
+  "Same as get-instruction-coding, but with the actual parameter values ."
+  (multiple-value-bind (word op)
+      (process-instruction inst)
+    (format nil "~%~a~%~32,'0B" (show-coding op) word)))
