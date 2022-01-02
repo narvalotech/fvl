@@ -305,20 +305,6 @@
           (logand (1+ (lognot fixed))))
       (1- (ash 1 (+ int-bits frac-bits)))))))
 
-;; (encode-fixed-point 0 10 .5)
-;; (encode-fixed-point 0 10 0.9991)
-;; (encode-fixed-point 0 10 0.000977)
-;; (encode-fixed-point 0 10 -0.000977)
-;; (encode-fixed-point 1 9 1.998046875)
-;; (encode-fixed-point 1 9 -1.998046875)
-;; (encode-fixed-point 1 9 -1.5)
-;; (encode-fixed-point 1 9 -2)
-;; (encode-fixed-point 1 9 -1)
-;; (encode-fixed-point 1 9 1)
-;; (encode-fixed-point 1 9 .5)
-;; (encode-fixed-point 1 9 2)       ; saturation test
-;; (encode-fixed-point 1 9 .5)
-
 (defun decode-fixed-point (int-bits frac-bits value)
   (if (logbitp (+ int-bits frac-bits) value)
       (/
@@ -328,15 +314,6 @@
        (ash 1 frac-bits)
        -1)
       (/ value (ash 1 frac-bits))))
-
-;; (decode-fixed-point 0 10 #x1)
-;; (decode-fixed-point 0 10 #x3ff)
-;; (decode-fixed-point 0 10 #x7ff)
-;; (decode-fixed-point 1 9 #x1)
-;; (decode-fixed-point 1 9 #x500)
-;; (decode-fixed-point 1 9 #x7ff)
-;; (decode-fixed-point 1 9 #x3ff)
-;; (decode-fixed-point 1 9 511)
 
 (defmethod encode-param-m (value param (param-type (eql 's.10)))
   (encode-fixed-point 0 10 value))
