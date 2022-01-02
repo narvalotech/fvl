@@ -271,12 +271,14 @@
 ;; - position
 
 (defun encode-param (value param)
-  ;; FIXME: properly encode raw hex
   (ash
    (logand (1- (ash 1 (width param)))
            ;; FIXME: hack because I can't eql on a slot
            ;; maybe generics are too much, should just use cond instead
-           (encode-param-m value param (form param)))
+           (if (and (typep value 'symbol) (eql (schar (string value) 0) #\$))
+               ;; Use hex value directly if specified with $
+               (read-from-string (format nil "#x~A" (subseq (string value) 1)))
+               (encode-param-m value param (form param))))
    (pos param)))
 
 (defgeneric encode-param-m (value param param-type)
