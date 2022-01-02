@@ -226,15 +226,15 @@
                "C * ACC + D"
                "SOF will multiply the current value in ACC with C and will then add the
   constant D to the result."
-               '(("C" 16 16 "S1.14" nil)
-                 ("D" 5 11 "S.10"  nil))) *fv1-opcodes*)
+               '(("C" 16 16 s1.14 nil)
+                 ("D" 5 11 s.10 nil))) *fv1-opcodes*)
 
 (vector-push
  (make-opcode 'and #b01110
                "ACC & MASK"
                "AND will perform a bitwise 'and' of the current ACC and the
   specified 24b MASK."
-              '(("M" 8 24 "uint" nil))) *fv1-opcodes*)
+              '(("M" 8 24 uint nil))) *fv1-opcodes*)
 
 ;; (print (mnemonic (aref *fv1-opcodes* 0)))
 
@@ -260,7 +260,7 @@
           counting T into i
           do (setf inst-word
                    (logior inst-word
-                           (encode-param param (nth i inst))))
+                           (encode-param (nth i inst) param)))
           finally (return (values inst-word op)))))
 
 ;; (format nil "~B" (process-instruction (nth 0 *asm-sexp*)))
@@ -269,18 +269,91 @@
 ;; - type/form
 ;; - width
 ;; - position
-;; TODO: take type into account, for now only encoding based on size + pos
-;; TODO: deal with non-int types
-(defun encode-param (param value)
+
+(defun encode-param (value param)
+  ;; FIXME: properly encode raw hex
   (ash
    (logand (1- (ash 1 (width param)))
-           value)
+           ;; FIXME: hack because I can't eql on a slot
+           ;; maybe generics are too much, should just use cond instead
+           (encode-param-m value param (form param)))
    (pos param)))
 
-;; (show-binary-instruction (nth 0 *asm-sexp*))
+(defgeneric encode-param-m (value param param-type)
+  (:documentation "Encode an instruction/opcode parameter in binary at its place
+  in the instruction word."))
+
+(defmethod encode-param-m (value param (param-type (eql 'uint)))
+  value)
+
+(defun saturate (int-bits frac-bits value)
+  ;; TODO: emit warning/condition on saturation
+  (cond
+    ((>= value (ash 1 (+ int-bits frac-bits)))
+     (1- (ash 1 (+ int-bits frac-bits))))
+    (t value)))
+
+(defun encode-fixed-point (int-bits frac-bits value)
+  (let ((fixed (truncate (* (abs value) (ash 1 frac-bits)))))
+    (logior
+     ;; Sign bit
+     (ash (if (< value 0) 1 0) (+ int-bits frac-bits))
+     ;; Fixed point conversion
+     (logand
+      (if (>= value 0)
+          (saturate int-bits frac-bits fixed)
+          (logand (1+ (lognot fixed))))
+      (1- (ash 1 (+ int-bits frac-bits)))))))
+
+;; (encode-fixed-point 0 10 .5)
+;; (encode-fixed-point 0 10 0.9991)
+;; (encode-fixed-point 0 10 0.000977)
+;; (encode-fixed-point 0 10 -0.000977)
+;; (encode-fixed-point 1 9 1.998046875)
+;; (encode-fixed-point 1 9 -1.998046875)
+;; (encode-fixed-point 1 9 -1.5)
+;; (encode-fixed-point 1 9 -2)
+;; (encode-fixed-point 1 9 -1)
+;; (encode-fixed-point 1 9 1)
+;; (encode-fixed-point 1 9 .5)
+;; (encode-fixed-point 1 9 2)       ; saturation test
+;; (encode-fixed-point 1 9 .5)
+
+(defun decode-fixed-point (int-bits frac-bits value)
+  (if (logbitp (+ int-bits frac-bits) value)
+      (/
+       ;; Mask includes the sign bit
+       (logand (1- (ash 1 (+ int-bits frac-bits 1)))
+               (1+ (lognot value)))
+       (ash 1 frac-bits)
+       -1)
+      (/ value (ash 1 frac-bits))))
+
+;; (decode-fixed-point 0 10 #x1)
+;; (decode-fixed-point 0 10 #x3ff)
+;; (decode-fixed-point 0 10 #x7ff)
+;; (decode-fixed-point 1 9 #x1)
+;; (decode-fixed-point 1 9 #x500)
+;; (decode-fixed-point 1 9 #x7ff)
+;; (decode-fixed-point 1 9 #x3ff)
+;; (decode-fixed-point 1 9 511)
+
+(defmethod encode-param-m (value param (param-type (eql 's.10)))
+  (encode-fixed-point 0 10 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's1.9)))
+  (encode-fixed-point 1 9 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's1.14)))
+  (encode-fixed-point 1 14 value))
 
 (defun show-binary-instruction (inst)
-  "Same as get-instruction-coding, but with the actual parameter values ."
+  "Same as get-instruction-coding, but with the actual parameter values."
   (multiple-value-bind (word op)
       (process-instruction inst)
-    (format nil "~%~a~%~32,'0B" (show-coding op) word)))
+    (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
+            (show-coding op)
+            word)))
+
+(loop for ins in *asm-sexp* do
+  (print (show-binary-instruction ins)))
