@@ -220,28 +220,16 @@
 ;; FIXME: temp location for the opcode list
 (defparameter *fv1-opcodes* (make-array 1000 :adjustable t :fill-pointer 0))
 
-;; Testing
-(vector-push
- (make-opcode 'sof #b01101
-               "C * ACC + D"
-               "SOF will multiply the current value in ACC with C and will then add the
-  constant D to the result."
-               '(("C" 16 16 s1.14 nil)
-                 ("D" 5 11 s.10 nil))) *fv1-opcodes*)
-
-(vector-push
- (make-opcode 'and #b01110
-               "ACC & MASK"
-               "AND will perform a bitwise 'and' of the current ACC and the
-  specified 24b MASK."
-              '(("M" 8 24 uint nil))) *fv1-opcodes*)
+;; Load the opcode definitions inside *fv1-opcodes*
+(load (uiop:parse-unix-namestring "./fv1-opcodes.lisp"))
 
 ;; (print (mnemonic (aref *fv1-opcodes* 0)))
 
 ;; Read test ASM file into a list
+;; Note: need to set directory to where this file is first.
 (defparameter *asm-sexp*
   (with-open-file
-      (stream "/home/john/Seafile/Projects/Hardware/FV1clip/software/assembler/testasm.fvl")
+      (stream (uiop:parse-unix-namestring "./testasm.fvl"))
     (loop for line = (read-line stream nil)
           until (eq line nil) collect (read-from-string line))))
 
@@ -271,6 +259,7 @@
 ;; - position
 
 (defun encode-param (value param)
+  ;; TODO: support bit vector entry
   (ash
    (logand (1- (ash 1 (width param)))
            ;; FIXME: hack because I can't eql on a slot
