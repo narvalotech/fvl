@@ -196,18 +196,23 @@
   (loop for param in paramlist collect
         (apply #'make-param param)))
 
-(defun make-opcode (mne op desc-op desc params)
-  (make-instance 'fv1-op
-                 :mnemonic mne
-                 :opcode   op
-                 :desc-op  desc-op
-                 :desc     desc
-                 :params   (make-params params)))
+(defun pprint-param (param)
+  (with-slots (name width form) param
+    (format nil "~a : ~a (~a bits)" name form width)))
+
+(defun make-opcode (op-list)
+  (destructuring-bind (mne op params desc-op desc) op-list
+    (make-instance 'fv1-op
+                   :mnemonic mne
+                   :opcode   op
+                   :desc-op  desc-op
+                   :desc     desc
+                   :params   (make-params params))))
 
 (defun show-coding (opcode)
   "Return a representation of the instruction coding, in the style of the
    SpinASM instruction manual."
-  (let ((repr-str "00000000000000000000000000000000"))
+  (let ((repr-str (copy-seq "00000000000000000000000000000000")))
     (loop for param in (params opcode) do
       (loop for i below (width param)
             do (setf (schar repr-str (- 31 i (pos param)))
@@ -218,12 +223,26 @@
     repr-str))
 
 ;; FIXME: temp location for the opcode list
-(defparameter *fv1-opcodes* (make-array 1000 :adjustable t :fill-pointer 0))
-
 ;; Load the opcode definitions inside *fv1-opcodes*
-(load (uiop:parse-unix-namestring "./fv1-opcodes.lisp"))
+(defparameter *fv1-opcodes*
+  (loop for op in
+                   (with-open-file
+                       (stream (uiop:parse-unix-namestring "./fv1-opcodes.lisp"))
+                     (read stream))
+        collect (make-opcode op)))
 
-;; (print (mnemonic (aref *fv1-opcodes* 0)))
+(defun find-opcode (mne)
+  (loop for opcode in *fv1-opcodes*
+        until (eql (mnemonic opcode) mne)
+        finally (return opcode)))
+
+;; Dump all opcodes + params to stdout
+(format t "Available opcodes ~%")
+(loop for opcode in *fv1-opcodes* do
+  (print (mnemonic opcode))
+  (print (show-coding opcode))
+  (loop for param in (params opcode) do
+        (print (pprint-param param))))
 
 ;; Read test ASM file into a list
 ;; Note: need to set directory to where this file is first.
@@ -239,10 +258,7 @@
 ;; Process a single opcode list
 ;; loop across all possible opcodes until eql
 (defun process-instruction (inst)
-  (let* ((op
-          (loop for opcode across *fv1-opcodes*
-                until (eql (mnemonic opcode) (car inst))
-                finally (return opcode)))
+  (let* ((op (find-opcode (car inst)))
         (inst-word (logand #x0000001F (opcode op)))) ; 5-bit opcode
     (loop for param in (params op)
           counting T into i
