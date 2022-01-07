@@ -213,13 +213,13 @@
   "Return a representation of the instruction coding, in the style of the
    SpinASM instruction manual."
   (let ((repr-str (copy-seq "00000000000000000000000000000000")))
+    (loop for i below (integer-length (opcode opcode))
+          do (setf (schar repr-str (- 31 i))
+                   (if (logbitp i (opcode opcode)) #\1 #\0)))
     (loop for param in (params opcode) do
       (loop for i below (width param)
             do (setf (schar repr-str (- 31 i (pos param)))
                      (schar (name param) 0))))
-    (loop for i below (integer-length (opcode opcode))
-          do (setf (schar repr-str (- 31 i))
-                   (if (logbitp i (opcode opcode)) #\1 #\0)))
     repr-str))
 
 ;; FIXME: temp location for the opcode list
@@ -259,7 +259,7 @@
 ;; loop across all possible opcodes until eql
 (defun process-instruction (inst)
   (let* ((op (find-opcode (car inst)))
-        (inst-word (logand #x0000001F (opcode op)))) ; 5-bit opcode
+        (inst-word (logand #xFFFFFFFF (opcode op)))) ; opcode can be up to word-len
     (loop for param in (params op)
           counting T into i
           do (setf inst-word
