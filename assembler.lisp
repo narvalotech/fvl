@@ -328,6 +328,12 @@
 (defmethod encode-param-m (value param (param-type (eql 's1.9)))
   (encode-fixed-point 1 9 value))
 
+(defmethod encode-param-m (value param (param-type (eql 's4.6)))
+  (encode-fixed-point 4 6 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's.15)))
+  (encode-fixed-point 0 15 value))
+
 (defmethod encode-param-m (value param (param-type (eql 's1.14)))
   (encode-fixed-point 1 14 value))
 
