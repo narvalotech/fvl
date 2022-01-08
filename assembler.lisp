@@ -244,17 +244,6 @@
   (loop for param in (params opcode) do
         (print (pprint-param param))))
 
-;; Read test ASM file into a list
-;; Note: need to set directory to where this file is first.
-(defparameter *asm-sexp*
-  (with-open-file
-      (stream (uiop:parse-unix-namestring "./testasm.fvl"))
-    (loop for line = (read-line stream nil)
-          until (eq line nil) collect (read-from-string line))))
-
-;; (print *asm-sexp*)
-;; (eql 'sof (car (car *asm-sexp*)))
-
 ;; Process a single opcode list
 ;; loop across all possible opcodes until eql
 (defun process-instruction (inst)
@@ -266,8 +255,6 @@
                    (logior inst-word
                            (encode-param (nth i inst) param)))
           finally (return (values inst-word op)))))
-
-;; (format nil "~B" (process-instruction (nth 0 *asm-sexp*)))
 
 ;; Encode param depending on:
 ;; - type/form
@@ -344,6 +331,15 @@
     (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
             (show-coding op)
             word)))
+
+;; Assemble test file
+;; Read test ASM file into a list
+;; Note: need to set directory to where this file is first.
+(defparameter *asm-sexp*
+  (with-open-file
+      (stream (uiop:parse-unix-namestring "./testasm.fvl"))
+    (loop for line = (read-line stream nil)
+          until (eq line nil) collect (read-from-string line))))
 
 (loop for ins in *asm-sexp* do
   (print (show-binary-instruction ins)))
