@@ -261,15 +261,30 @@
 ;; - width
 ;; - position
 
+(defun get-keyword-value (val list)
+  (loop for sym in list
+        do (if (eql (car sym) val)
+               (return (cadr sym))
+               nil)))
+
+(defun decode-reg-sym (val)
+  "Return the value of the FV-1 register or reserved symbol."
+  (cond ((get-keyword-value val *fv1-registers*))
+        ((get-keyword-value val *fv1-symbols*))
+        (t nil)))
+
 (defun encode-param (value param)
   ;; TODO: support bit vector entry
   (ash
    (logand (1- (ash 1 (width param)))
-           ;; FIXME: hack because I can't eql on a slot
            ;; maybe generics are too much, should just use cond instead
-           (if (and (typep value 'symbol) (eql (schar (string value) 0) #\$))
-               ;; Use hex value directly if specified with $
-               (read-from-string (format nil "#x~A" (subseq (string value) 1)))
+           (if (typep value 'symbol)
+               (cond  ((eql (schar (string value) 0) #\$)
+                       ;; Use hex value directly if specified with $
+                       (read-from-string (format nil "#x~A" (subseq (string value) 1))))
+                      (; Parse if register or reserved symbol
+                       (decode-reg-sym value))
+                      (t (format t "Unrecognized symbol")))
                (encode-param-m value param (form param))))
    (pos param)))
 

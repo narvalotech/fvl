@@ -15,12 +15,13 @@ For more info, see assembler.lisp.
 Remaining work
 --------------
 
-- translation of predefined symbols to hex in param handling
 - skip instructions and labels
 - mem statements (memory mgmt)
 - OR operator for bitfields
 - EQU statement
+- NOP instruction
 - handling of 2's complement in non-s.xx numbers
   - e.g. param F in WLDR, check sign bit is correctly set
+- ihex writer
 - ihex disassembler
 - reader for .spn syntax

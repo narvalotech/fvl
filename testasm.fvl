@@ -3,3 +3,5 @@
 (sof .25 -.125)
 (sof -0 #x7ff) ;; Some other sof instr (test list)
 (sof -0 $7ff) ;; Some other sof instr (test list)
+(wrax DACL 0)
+(rdax ADCR 1.0)
