@@ -187,9 +187,9 @@ reverb program.")
 
  ;; LFO instructions
  ;; ----------------
- (wlds #b10010 (("A" 5 15 uint nil)
+ (wlds #b10010 (("N" 29 1 uint nil)
                 ("F" 20 9 uint nil)
-                ("N" 29 1 uint nil))
+                ("A" 5 15 uint nil))
        "See description"
        "WLDS will load frequency and amplitude control values into the selected
 SIN LFO (N = 0 or 1).
@@ -202,9 +202,9 @@ amplitude control values see application note AN­0001.")
 
  ;; Same opcode as wlds except bit 30
  (wldr #b01000000000000000000000000010010
-       (("A" 5 2 uint nil)
+       (("N" 29 1 uint nil)
         ("F" 13 16 uint nil)
-        ("N" 29 1 uint nil))
+        ("A" 5 2 uint nil))
        "See description"
        "WLDR will load frequency and amplitude control values into the selected
 RAMP LFO (N = 0 or 1).
@@ -219,9 +219,9 @@ amplitude control values see application note AN­0001.")
       "0->RAMP LFO N"
       "JAM will reset the selected RAMP LFO to its starting point.")
 
- (cho-rda #b10100 (("A" 5 16 uint nil)
-                   ("N" 21 2 uint nil)
-                   ("C" 24 6 uint nil))
+ (cho-rda #b10100 (("N" 21 2 uint nil)
+                   ("C" 24 6 uint nil)
+                   ("A" 5 16 uint nil))
           "See description"
           "Like the RDA instruction, CHO RDA will read a sample from the delay
 ram, multiply it by a coefficient and add the product to the previous content of
@@ -261,9 +261,9 @@ NA.
 ")
 
  (cho-sof #b10000000000000000000000000010100
-          (("D" 5 16 s.15 nil)
-           ("N" 21 2 uint nil)
-           ("C" 24 6 uint nil))
+          (("N" 21 2 uint nil)
+           ("C" 24 6 uint nil)
+           ("D" 5 16 s.15 nil))
           "See description"
           "Like the SOF instruction, CHO SOF will multiply ACC by a coefficient
 and add the constant D to the result.
