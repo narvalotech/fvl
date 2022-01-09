@@ -273,6 +273,19 @@
         ((get-keyword-value val *fv1-symbols*))
         (t nil)))
 
+(defun uses-or-operator (value)
+  (search "=" (string value)))
+
+;; Create list of params to OR
+;; For each element, call parse-param
+;; OR the resulting list together
+(defun split-or-ed-param (value)
+  (loop for pos = 0
+        collecting
+        (search "=" (string value) :start2 pos)))
+(defun parse-or-ed-param (value)
+  "Compute the value of or-ed values in a parameter definition.")
+
 (defun encode-param (value param)
   ;; TODO: support bit vector entry
   (ash
@@ -408,11 +421,17 @@
 ;; Assemble test file
 ;; Read test ASM file into a list
 ;; Note: need to set directory to where this file is first.
+
+;; Hack to get rid of special | character
+(defparameter *fvl-readtable* (copy-readtable))
+(set-syntax-from-char #\| #\= *fvl-readtable*)
+
 (defparameter *asm-sexp*
-  (with-open-file
-      (stream (uiop:parse-unix-namestring "./testasm.fvl"))
-    (loop for line = (read-line stream nil)
-          until (eq line nil) collect (read-from-string line))))
+  (let ((*readtable* *fvl-readtable*))
+    (with-open-file
+        (stream (uiop:parse-unix-namestring "./testasm.fvl"))
+      (loop for line = (read-line stream nil)
+            until (eq line nil) collect (read-from-string line)))))
 
 (loop for ins in *asm-sexp* do
   (print (show-binary-instruction ins)))
