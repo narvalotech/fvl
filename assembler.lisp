@@ -269,23 +269,32 @@
 
 (defun decode-reg-sym (val)
   "Return the value of the FV-1 register or reserved symbol."
-  (cond ((get-keyword-value val *fv1-registers*))
-        ((get-keyword-value val *fv1-symbols*))
-        (t nil)))
+  (if (typep val 'symbol)
+      (cond ((get-keyword-value val *fv1-registers*))
+            ((get-keyword-value val *fv1-symbols*))
+            (t nil))
+      val))
+
+(defun bor (&rest param-list)
+  "Bitwise-OR, accepts FV-1 symbols and registers."
+  (reduce 'logior
+   (loop for sym in param-list collecting (decode-reg-sym sym))))
 
 (defun encode-param (value param)
-  ;; TODO: support bit vector entry
   (ash
    (logand (1- (ash 1 (width param)))
            ;; maybe generics are too much, should just use cond instead
-           (if (typep value 'symbol)
-               (cond  ((eql (schar (string value) 0) #\$)
-                       ;; Use hex value directly if specified with $
-                       (read-from-string (format nil "#x~A" (subseq (string value) 1))))
-                      (; Parse if register or reserved symbol
-                       (decode-reg-sym value))
-                      (t (format t "Unrecognized symbol")))
-               (encode-param-m value param (form param))))
+           (cond ((typep value 'symbol)
+                  (cond  ((eql (schar (string value) 0) #\$)
+                          ;; Use hex value directly if specified with $
+                          (read-from-string
+                           (format nil "#x~A" (subseq (string value) 1))))
+                         (; Parse if register or reserved symbol
+                          (decode-reg-sym value))
+                         (t (format t "Unrecognized symbol"))))
+                 ((typep value 'list) (eval value))
+                 ;; TODO: replace "form" with less ambiguous name
+                 (t (encode-param-m value param (form param)))))
    (pos param)))
 
 (defgeneric encode-param-m (value param param-type)
