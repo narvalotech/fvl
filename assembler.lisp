@@ -283,7 +283,6 @@
 (defun encode-param (value param)
   (ash
    (logand (1- (ash 1 (width param)))
-           ;; maybe generics are too much, should just use cond instead
            (cond ((typep value 'symbol)
                   (cond  ((eql (schar (string value) 0) #\$)
                           ;; Use hex value directly if specified with $
@@ -294,6 +293,7 @@
                          (t (format t "Unrecognized symbol"))))
                  ((typep value 'list) (eval value))
                  ;; TODO: replace "form" with less ambiguous name
+                 ;; TODO: remove generics maybe ?
                  (t (encode-param-m value param (form param)))))
    (pos param)))
 
