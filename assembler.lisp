@@ -190,8 +190,6 @@
                  :form   form
                  :range  range))
 
-;; TODO: need fns for coding parameters into binary, depending on their properties.
-
 (defun make-params (paramlist)
   (loop for param in paramlist collect
         (apply #'make-param param)))
