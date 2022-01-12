@@ -229,131 +229,6 @@
                      (read stream))
         collect (make-opcode op)))
 
-(defun find-opcode (mne)
-  (loop for opcode in *fv1-opcodes*
-        until (eql (mnemonic opcode) mne)
-        finally (return opcode)))
-
-;; Dump all opcodes + params to stdout
-(format t "Available opcodes ~%")
-(loop for opcode in *fv1-opcodes* do
-  (print (mnemonic opcode))
-  (print (show-coding opcode))
-  (loop for param in (params opcode) do
-        (print (pprint-param param))))
-
-;; Process a single opcode list
-;; loop across all possible opcodes until eql
-(defun process-instruction (inst)
-  (let* ((op (find-opcode (car inst)))
-        (inst-word (logand #xFFFFFFFF (opcode op)))) ; opcode can be up to word-len
-    (loop for param in (params op)
-          counting T into i
-          do (setf inst-word
-                   (logior inst-word
-                           (encode-param (nth i inst) param)))
-          finally (return (values inst-word op)))))
-
-;; Encode param depending on:
-;; - type/form
-;; - width
-;; - position
-
-(defun get-keyword-value (val list)
-  (loop for sym in list
-        do (if (eql (car sym) val)
-               (return (cadr sym))
-               nil)))
-
-(defun decode-reg-sym (val)
-  "Return the value of the FV-1 register or reserved symbol."
-  (if (typep val 'symbol)
-      (cond ((get-keyword-value val *fv1-registers*))
-            ((get-keyword-value val *fv1-symbols*))
-            (t nil))
-      val))
-
-(defun bor (&rest param-list)
-  "Bitwise-OR, accepts FV-1 symbols and registers."
-  (reduce 'logior
-   (loop for sym in param-list collecting (decode-reg-sym sym))))
-
-(defun encode-param (value param)
-  (ash
-   (logand (1- (ash 1 (width param)))
-           (cond ((typep value 'symbol)
-                  (cond  ((eql (schar (string value) 0) #\$)
-                          ;; Use hex value directly if specified with $
-                          (read-from-string
-                           (format nil "#x~A" (subseq (string value) 1))))
-                         (; Parse if register or reserved symbol
-                          (decode-reg-sym value))
-                         (t (format t "Unrecognized symbol"))))
-                 ((typep value 'list) (eval value))
-                 ;; TODO: replace "form" with less ambiguous name
-                 ;; TODO: remove generics maybe ?
-                 (t (encode-param-m value param (form param)))))
-   (pos param)))
-
-(defgeneric encode-param-m (value param param-type)
-  (:documentation "Encode an instruction/opcode parameter in binary at its place
-  in the instruction word."))
-
-(defmethod encode-param-m (value param (param-type (eql 'uint)))
-  value)
-
-(defun saturate (int-bits frac-bits value)
-  ;; TODO: emit warning/condition on saturation
-  (cond
-    ((>= value (ash 1 (+ int-bits frac-bits)))
-     (1- (ash 1 (+ int-bits frac-bits))))
-    (t value)))
-
-(defun encode-fixed-point (int-bits frac-bits value)
-  (let ((fixed (truncate (* (abs value) (ash 1 frac-bits)))))
-    (logior
-     ;; Sign bit
-     (ash (if (< value 0) 1 0) (+ int-bits frac-bits))
-     ;; Fixed point conversion
-     (logand
-      (if (>= value 0)
-          (saturate int-bits frac-bits fixed)
-          (logand (1+ (lognot fixed))))
-      (1- (ash 1 (+ int-bits frac-bits)))))))
-
-(defun decode-fixed-point (int-bits frac-bits value)
-  (if (logbitp (+ int-bits frac-bits) value)
-      (/
-       ;; Mask includes the sign bit
-       (logand (1- (ash 1 (+ int-bits frac-bits 1)))
-               (1+ (lognot value)))
-       (ash 1 frac-bits)
-       -1)
-      (/ value (ash 1 frac-bits))))
-
-(defmethod encode-param-m (value param (param-type (eql 's.10)))
-  (encode-fixed-point 0 10 value))
-
-(defmethod encode-param-m (value param (param-type (eql 's1.9)))
-  (encode-fixed-point 1 9 value))
-
-(defmethod encode-param-m (value param (param-type (eql 's4.6)))
-  (encode-fixed-point 4 6 value))
-
-(defmethod encode-param-m (value param (param-type (eql 's.15)))
-  (encode-fixed-point 0 15 value))
-
-(defmethod encode-param-m (value param (param-type (eql 's1.14)))
-  (encode-fixed-point 1 14 value))
-
-(defun show-binary-instruction (inst)
-  "Same as get-instruction-coding, but with the actual parameter values."
-  (multiple-value-bind (word op)
-      (process-instruction inst)
-    (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
-            (show-coding op)
-            word)))
-
 (defmacro generate-registers (name addr num)
   `(list ,@(loop for i from 0 to (1- num)
                  collecting
@@ -411,6 +286,138 @@
    '(GEZ #x10000000) ; Skip if ACC is' >= 0'
    '(NEG #x8000000)  ; Skip if ACC is Negative
    ))
+
+(defun find-opcode (mne)
+  (loop for opcode in *fv1-opcodes*
+        until (eql (mnemonic opcode) mne)
+        finally (return opcode)))
+
+;; Dump all opcodes + params to stdout
+(format t "Available opcodes ~%")
+(loop for opcode in *fv1-opcodes* do
+  (print (mnemonic opcode))
+  (print (show-coding opcode))
+  (loop for param in (params opcode) do
+        (print (pprint-param param))))
+
+;; Process a single opcode list
+;; loop across all possible opcodes until eql
+(defun process-instruction (inst)
+  (let* ((op (find-opcode (car inst)))
+        (inst-word (logand #xFFFFFFFF (opcode op)))) ; opcode can be up to word-len
+    (loop for param in (params op)
+          counting T into i
+          do (setf inst-word
+                   (logior inst-word
+                           (encode-param (nth i inst) param)))
+          finally (return (values inst-word op)))))
+
+;; Encode param depending on:
+;; - type/form
+;; - width
+;; - position
+
+(defun bor (&rest param-list)
+  "Bitwise-OR, accepts FV-1 symbols and registers."
+  (reduce 'logior param-list))
+
+(defmacro let-kv (kv-list &rest body)
+  `(let ,(eval kv-list)
+     (progn ,@body)))
+
+(defparameter *tmp* (list 0 'DACL))
+(defparameter *tmp* (read-from-string "(0 DACL)"))
+
+;; symbol-value and eval don't "see" the lexical (let) bindings, only global.
+;; after some search, can't be done -> maybe define fns in the macro instead ?
+;; becomes complicated for no reason.
+
+(let ((DACL 3))
+  (print (boundp (nth 1 *tmp*))))
+
+(let-kv (append *fv1-registers* *fv1-symbols*)
+        (type-of *tmp*))
+
+(let-kv (append *fv1-registers* *fv1-symbols*)
+        (type-of *tmp*)
+        (logand 63 *tmp*))
+
+(defgeneric encode-param-m (value param param-type)
+  (:documentation "Encode an instruction/opcode parameter in binary at its place
+  in the instruction word."))
+
+(defun encode-param (value param)
+  (let-kv (append *fv1-registers* *fv1-symbols*)
+          (ash
+           (logand (1- (ash 1 (width param)))
+                   (cond ((typep value 'symbol)
+                          (cond  ((eql (schar (string value) 0) #\$)
+                                  ; Use hex value directly if specified with $
+                                  (read-from-string
+                                   (format nil "#x~A" (subseq (string value) 1))))
+                                 (; Return value if register or reserved symbol
+                                  t (eval value))))
+                         ;; If it's a list, assume we want to call a lisp fn
+                         ((typep value 'list) (eval value))
+                         ;; TODO: replace "form" with less ambiguous name
+                         ;; TODO: remove generics maybe ?
+                         (t (encode-param-m value param (form param)))))
+           (pos param))))
+
+(defmethod encode-param-m (value param (param-type (eql 'uint)))
+  value)
+
+(defun saturate (int-bits frac-bits value)
+  ;; TODO: emit warning/condition on saturation
+  (cond
+    ((>= value (ash 1 (+ int-bits frac-bits)))
+     (1- (ash 1 (+ int-bits frac-bits))))
+    (t value)))
+
+(defun encode-fixed-point (int-bits frac-bits value)
+  (let ((fixed (truncate (* (abs value) (ash 1 frac-bits)))))
+    (logior
+     ;; Sign bit
+     (ash (if (< value 0) 1 0) (+ int-bits frac-bits))
+     ;; Fixed point conversion
+     (logand
+      (if (>= value 0)
+          (saturate int-bits frac-bits fixed)
+          (logand (1+ (lognot fixed))))
+      (1- (ash 1 (+ int-bits frac-bits)))))))
+
+(defun decode-fixed-point (int-bits frac-bits value)
+  (if (logbitp (+ int-bits frac-bits) value)
+      (/
+       ;; Mask includes the sign bit
+       (logand (1- (ash 1 (+ int-bits frac-bits 1)))
+               (1+ (lognot value)))
+       (ash 1 frac-bits)
+       -1)
+      (/ value (ash 1 frac-bits))))
+
+(defmethod encode-param-m (value param (param-type (eql 's.10)))
+  (encode-fixed-point 0 10 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's1.9)))
+  (encode-fixed-point 1 9 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's4.6)))
+  (encode-fixed-point 4 6 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's.15)))
+  (encode-fixed-point 0 15 value))
+
+(defmethod encode-param-m (value param (param-type (eql 's1.14)))
+  (encode-fixed-point 1 14 value))
+
+(defun show-binary-instruction (inst)
+  "Same as get-instruction-coding, but with the actual parameter values."
+  (multiple-value-bind (word op)
+      (process-instruction inst)
+    (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
+            (show-coding op)
+            word)))
 
 ;; Assemble test file
 ;; Read test ASM file into a list
