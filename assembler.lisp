@@ -229,6 +229,64 @@
                      (read stream))
         collect (make-opcode op)))
 
+(defmacro generate-registers (name addr num)
+  `(list ,@(loop for i from 0 to (1- num)
+                 collecting
+                 `'(,(read-from-string (format nil "~A~A" name i))
+                    ,(+ addr i)))))
+
+(defparameter *fv1-registers*
+  (append
+   (list
+    '(SIN0_RATE  #x00) ; Sine LFO 0 rate
+    '(SIN0_RANGE #x01) ; Sine LFO 0 range
+    '(SIN1_RATE  #x02) ; Sine LFO 1 rate
+    '(SIN1_RANGE #x03) ; Sine LFO 1 range
+    '(RMP0_RATE  #x04) ; Ramp LFO 0 rate
+    '(RMP0_RANGE #x05) ; Ramp LFO 0 range
+    '(RMP1_RATE  #x06) ; Ramp LFO 1 rate
+    '(RMP1_RANGE #x07) ; Ramp LFO 1 range
+    '(POT0       #x10) ; Potentiometer 0 value
+    '(POT1       #x11) ; Potentiometer 1 value
+    '(POT2       #x12) ; Potentiometer 2 value
+    '(ADCL       #x14) ; ADC value (left)
+    '(ADCR       #x15) ; ADC value (right)
+    '(DACL       #x16) ; DAC value (left)
+    '(DACR       #x17) ; DAC value (right)
+    '(ADDR_PTR   #x18) ; Used with RMPA inst for indirect read
+    )
+   ;; Generate REG0 to REG31
+   (generate-registers "REG" #x20 32)))
+
+(defparameter *fv1-symbols*
+  (list
+   ;; Used with CHO instructions
+   '(SIN0 #x00) ; SINE LFO 0
+   '(SIN1 #x01) ; SINE LFO 1
+   '(COS0 #x08) ; COSE LFO 0
+   '(COS1 #x09) ; COSE LFO 1
+   '(RMP0 #x02) ; RAMP LFO 0
+   '(RMP1 #x03) ; RAMP LFO 1
+
+   '(RDA   #x00) ; ACC += (DRAM * COEFF)
+   '(SOF   #x02) ; ACC = (ACC * LFO COEFF) + Constant
+   '(RDAL  #x03) ; Reads  value of selected LFO into the ACC
+   '(SIN   #x00) ; SIN/COS from SINE LFO
+   '(COS   #x01) ; SIN/COS from SINE LFO
+   '(REG   #x02) ; Save LFO temp reg in LFO block
+   '(COMPC #x04) ; 2's comp : Generate 1-x for interpolate
+   '(COMPA #x08) ; 1's comp address offset (Generate SIN or COS)
+   '(RPTR2 #x10) ; Add 1/2 to ramp to generate 2nd ramp for pitch shift
+   '(NA    #x20) ; Do NOT add LFO to address and select cross-face coefficient
+
+   ;; Used with SKP instruction
+   '(RUN #x80000000) ; Skip if NOT FIRST time through program
+   '(ZRC #x40000000) ; Skip On Zero Crossing
+   '(ZRO #x20000000) ; Skip if ACC = 0
+   '(GEZ #x10000000) ; Skip if ACC is' >= 0'
+   '(NEG #x8000000)  ; Skip if ACC is Negative
+   ))
+
 (defun find-opcode (mne)
   (loop for opcode in *fv1-opcodes*
         until (eql (mnemonic opcode) mne)
@@ -353,64 +411,6 @@
     (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
             (show-coding op)
             word)))
-
-(defmacro generate-registers (name addr num)
-  `(list ,@(loop for i from 0 to (1- num)
-                 collecting
-                 `'(,(read-from-string (format nil "~A~A" name i))
-                    ,(+ addr i)))))
-
-(defparameter *fv1-registers*
-  (append
-   (list
-    '(SIN0_RATE  #x00) ; Sine LFO 0 rate
-    '(SIN0_RANGE #x01) ; Sine LFO 0 range
-    '(SIN1_RATE  #x02) ; Sine LFO 1 rate
-    '(SIN1_RANGE #x03) ; Sine LFO 1 range
-    '(RMP0_RATE  #x04) ; Ramp LFO 0 rate
-    '(RMP0_RANGE #x05) ; Ramp LFO 0 range
-    '(RMP1_RATE  #x06) ; Ramp LFO 1 rate
-    '(RMP1_RANGE #x07) ; Ramp LFO 1 range
-    '(POT0       #x10) ; Potentiometer 0 value
-    '(POT1       #x11) ; Potentiometer 1 value
-    '(POT2       #x12) ; Potentiometer 2 value
-    '(ADCL       #x14) ; ADC value (left)
-    '(ADCR       #x15) ; ADC value (right)
-    '(DACL       #x16) ; DAC value (left)
-    '(DACR       #x17) ; DAC value (right)
-    '(ADDR_PTR   #x18) ; Used with RMPA inst for indirect read
-    )
-   ;; Generate REG0 to REG31
-   (generate-registers "REG" #x20 32)))
-
-(defparameter *fv1-symbols*
-  (list
-   ;; Used with CHO instructions
-   '(SIN0 #x00) ; SINE LFO 0
-   '(SIN1 #x01) ; SINE LFO 1
-   '(COS0 #x08) ; COSE LFO 0
-   '(COS1 #x09) ; COSE LFO 1
-   '(RMP0 #x02) ; RAMP LFO 0
-   '(RMP1 #x03) ; RAMP LFO 1
-
-   '(RDA   #x00) ; ACC += (DRAM * COEFF)
-   '(SOF   #x02) ; ACC = (ACC * LFO COEFF) + Constant
-   '(RDAL  #x03) ; Reads  value of selected LFO into the ACC
-   '(SIN   #x00) ; SIN/COS from SINE LFO
-   '(COS   #x01) ; SIN/COS from SINE LFO
-   '(REG   #x02) ; Save LFO temp reg in LFO block
-   '(COMPC #x04) ; 2's comp : Generate 1-x for interpolate
-   '(COMPA #x08) ; 1's comp address offset (Generate SIN or COS)
-   '(RPTR2 #x10) ; Add 1/2 to ramp to generate 2nd ramp for pitch shift
-   '(NA    #x20) ; Do NOT add LFO to address and select cross-face coefficient
-
-   ;; Used with SKP instruction
-   '(RUN #x80000000) ; Skip if NOT FIRST time through program
-   '(ZRC #x40000000) ; Skip On Zero Crossing
-   '(ZRO #x20000000) ; Skip if ACC = 0
-   '(GEZ #x10000000) ; Skip if ACC is' >= 0'
-   '(NEG #x8000000)  ; Skip if ACC is Negative
-   ))
 
 ;; Assemble test file
 ;; Read test ASM file into a list
