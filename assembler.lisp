@@ -336,6 +336,10 @@
   (reduce 'logior
    (loop for sym in param-list collecting (decode-reg-sym sym))))
 
+(defgeneric encode-param-m (value param param-type)
+  (:documentation "Encode an instruction/opcode parameter in binary at its place
+  in the instruction word."))
+
 (defun encode-param (value param)
   (ash
    (logand (1- (ash 1 (width param)))
@@ -352,10 +356,6 @@
                  ;; TODO: remove generics maybe ?
                  (t (encode-param-m value param (form param)))))
    (pos param)))
-
-(defgeneric encode-param-m (value param param-type)
-  (:documentation "Encode an instruction/opcode parameter in binary at its place
-  in the instruction word."))
 
 (defmethod encode-param-m (value param (param-type (eql 'uint)))
   value)
