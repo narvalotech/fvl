@@ -15,7 +15,6 @@ For more info, see assembler.lisp.
 Remaining work
 --------------
 
-- bit vector format (%, with _)
 - skip instructions and labels
 - mem statements (memory mgmt)
 - EQU statement

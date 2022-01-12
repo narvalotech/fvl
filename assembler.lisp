@@ -342,6 +342,18 @@ value."
   "Bitwise-OR on a list."
   (reduce 'logior param-list))
 
+(defun decode-hex (val)
+  (if (eql (schar (string val) 0) #\$)
+      (read-from-string
+       (format nil "#x~A" (subseq (string val) 1)))
+      nil))
+
+(defun decode-bin (val)
+  (if (eql (schar (string val) 0) #\%)
+      (read-from-string
+       (format nil "#b~A" (subseq (remove #\_ (string val)) 1)))
+      nil))
+
 (defgeneric encode-param-m (value param param-type)
   (:documentation "Encode an instruction/opcode parameter in binary at its place
   in the instruction word."))
@@ -350,10 +362,10 @@ value."
   (ash
    (logand (1- (ash 1 (width param)))
            (cond ((typep value 'symbol)
-                  (cond  ((eql (schar (string value) 0) #\$)
-                          ;; Use hex value directly if specified with $
-                          (read-from-string
-                           (format nil "#x~A" (subseq (string value) 1))))
+                  (cond  (; Use hex value directly if specified with $
+                          (decode-hex value))
+                         (; Use bin value directly if specified with %
+                          (decode-bin value))
                          (; Parse if register or reserved symbol
                           (decode-reg-sym value))
                          (t (format t "Unrecognized symbol"))))
