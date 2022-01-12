@@ -16,7 +16,6 @@ Remaining work
 --------------
 
 - bit vector format (%, with _)
-- rework register/keyword handling
 - skip instructions and labels
 - mem statements (memory mgmt)
 - EQU statement

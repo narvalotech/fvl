@@ -331,10 +331,16 @@
             (t nil))
       val))
 
+(defun decode-in-list (val)
+  "Return a lisp form, replacing the known FV-1 register/symbol names with their
+value."
+  (append
+   (list (car val))
+   (loop for el in (subseq val 1) collecting (decode-reg-sym el))))
+
 (defun bor (&rest param-list)
-  "Bitwise-OR, accepts FV-1 symbols and registers."
-  (reduce 'logior
-   (loop for sym in param-list collecting (decode-reg-sym sym))))
+  "Bitwise-OR on a list."
+  (reduce 'logior param-list))
 
 (defgeneric encode-param-m (value param param-type)
   (:documentation "Encode an instruction/opcode parameter in binary at its place
@@ -351,7 +357,7 @@
                          (; Parse if register or reserved symbol
                           (decode-reg-sym value))
                          (t (format t "Unrecognized symbol"))))
-                 ((typep value 'list) (eval value))
+                 ((typep value 'list) (eval (decode-in-list value)))
                  ;; TODO: replace "form" with less ambiguous name
                  ;; TODO: remove generics maybe ?
                  (t (encode-param-m value param (form param)))))
