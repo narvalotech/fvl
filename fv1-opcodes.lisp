@@ -314,20 +314,20 @@ N: LFO select: SIN0, COS0, SIN1, COS1, RMP0, RMP1.")
 
  (clr #b01110 ()
       "0 -> ACC"
-      "CLR will clear the accumulator.")
+      "CLR will clear the accumulator. Equiv to AND with M=0.")
 
  (not #b11111111111111111111111100010000 ()
       "~ACC -> ACC"
       "NOT will negate all bit positions whithin accumulator this performing a
-  1's complement.")
+  1's complement. Equivalent to XOR with all bits set.")
 
  (absa #b01001 ()
        "|ACC| -> ACC"
-       "Loads the accumulator with the absolute value of the accumulator.")
+       "Loads the accumulator with the absolute value of the accumulator.
+Equivalent to MAXX with unset params.")
 
  (ldax #b00101 (("A" 5 6 uint nil))
        "REG[ADDR] -> ACC"
        "Loads the accumulator with the contents of the addressed register.
-There seems to be a typo in the manual, the position of ADDR is unknown.
-TODO: assemble this instruction to find out where ADDR is.")
+Equivalent to RDFX with C=0.")
  )
