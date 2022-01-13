@@ -5,4 +5,8 @@
 (sof -0 $7ff) ;; Some other sof instr (test list)
 (wrax DACL 0)
 (rdax ADCR 1.0)
+
+; test comment on its own line
 (cho-rda RMP0 (bor COMPC REG #x01) %0001_1100)
+
+; end-of-file

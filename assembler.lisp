@@ -437,7 +437,10 @@ value."
   (with-open-file
       (stream (uiop:parse-unix-namestring "./testasm.fvl"))
     (loop for line = (read-line stream nil)
-          until (eq line nil) collect (read-from-string line))))
+          until (eq line nil)
+          unless (string-equal line "")
+          unless (eql (schar line 0) #\;)
+          collect (read-from-string line))))
 
 (loop for ins in *asm-sexp* do
   (print (show-binary-instruction ins)))
