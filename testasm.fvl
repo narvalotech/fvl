@@ -9,4 +9,8 @@
 ; test comment on its own line
 (cho-rda RMP0 (bor COMPC REG #x01) %0001_1100)
 
+; test signed int
+(wldr 0 -32768 1)
+(wldr 0 -2 1)
+
 ; end-of-file

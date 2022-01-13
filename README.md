@@ -18,8 +18,6 @@ Remaining work
 - skip instructions and labels
 - mem statements (memory mgmt)
 - EQU statement
-- handling of 2's complement in non-s.xx numbers
-  - e.g. param F in WLDR, check sign bit is correctly set
 - ihex writer
 - ihex disassembler
 - reader for .spn syntax
