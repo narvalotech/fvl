@@ -18,7 +18,6 @@ Remaining work
 - skip instructions and labels
 - mem statements (memory mgmt)
 - EQU statement
-- NOP instruction
 - handling of comments in source (raises error now)
 - handling of 2's complement in non-s.xx numbers
   - e.g. param F in WLDR, check sign bit is correctly set

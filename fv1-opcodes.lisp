@@ -307,6 +307,11 @@ N: LFO select: SIN0, COS0, SIN1, COS1, RMP0, RMP1.")
  ;; Pseudo opcodes
  ;; --------------
 
+ (nop #b10001 ()
+      "No-op"
+      "Fill empty program space with this. Equivalent to SKP with unset
+  params.")
+
  (clr #b01110 ()
       "0 -> ACC"
       "CLR will clear the accumulator.")
