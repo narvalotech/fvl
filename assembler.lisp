@@ -433,14 +433,14 @@ value."
 ;; Assemble test file
 ;; Read test ASM file into a list
 ;; Note: need to set directory to where this file is first.
-(defparameter *asm-sexp*
+(defun read-file (filename)
   (with-open-file
-      (stream (uiop:parse-unix-namestring "./testasm.fvl"))
+      (stream (uiop:parse-unix-namestring filename))
     (loop for line = (read-line stream nil)
           until (eq line nil)
           unless (string-equal line "")
-          unless (eql (schar line 0) #\;)
-          collect (read-from-string line))))
+            unless (eql (schar line 0) #\;)
+              collect (read-from-string line))))
 
-(loop for ins in *asm-sexp* do
-  (print (show-binary-instruction ins)))
+(loop for ins in (read-file "./testasm.fvl")
+      do (print (show-binary-instruction ins)))
