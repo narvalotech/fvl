@@ -17,7 +17,7 @@ Remaining work
 
 - skip instructions and labels
 - mem statements (memory mgmt)
-- EQU statement
+- negation (!) operator on params
 - ihex writer
 - ihex disassembler
 - reader for .spn syntax

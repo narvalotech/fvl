@@ -287,10 +287,13 @@
    '(NEG #x8000000)  ; Skip if ACC is Negative
    ))
 
+(defparameter *equ-list*
+  (list '(nil nil)))
+
 (defun find-opcode (mne)
   (loop for opcode in *fv1-opcodes*
-        until (eql (mnemonic opcode) mne)
-        finally (return opcode)))
+        if (eql (mnemonic opcode) mne) do (return opcode)
+        finally (return nil)))
 
 ;; Dump all opcodes + params to stdout
 (format t "Available opcodes ~%")
@@ -300,17 +303,42 @@
   (loop for param in (params opcode) do
         (print (pprint-param param))))
 
+(defun add-to-kv (kv name val)
+  (let ((pos
+          (loop for el in kv
+                counting t into pos
+                when (eql (car el) name)
+                  return (1- pos))))
+    (if pos
+        (setf (nth pos kv) (list name val))
+        (setf kv (append kv (list (list name val)))))
+    kv))
+
+(defun process-statement (inst)
+  "Process statements that are not FV-1 opcodes (e.g. EQU, LABEL, etc)."
+  (cond
+    ((eql (car inst) 'EQU)
+     (setf *equ-list* (add-to-kv *equ-list* (nth 1 inst) (nth 2 inst))))
+    ((eql (car inst) 'LABEL) nil)
+    (t nil)))
+
 ;; Process a single opcode list
 ;; loop across all possible opcodes until eql
 (defun process-instruction (inst)
-  (let* ((op (find-opcode (car inst)))
-        (inst-word (logand #xFFFFFFFF (opcode op)))) ; opcode can be up to word-len
-    (loop for param in (params op)
-          counting T into i
-          do (setf inst-word
-                   (logior inst-word
-                           (encode-param (nth i inst) param)))
-          finally (return (values inst-word op)))))
+  (let ((op (find-opcode (car inst))))
+    (if (eql op nil)
+        (values (process-statement inst) op)
+        (let ((inst-word (logand #xFFFFFFFF (opcode op))))
+          (loop for param in (params op)
+                counting T into i
+                do (setf inst-word
+                         (logior
+                          inst-word
+                          (ash
+                           (logand (1- (ash 1 (width param)))
+                                   (encode-param (nth i inst) param))
+                           (pos param))))
+                finally (return (values inst-word op)))))))
 
 ;; Encode param depending on:
 ;; - type/form
@@ -322,6 +350,12 @@
         do (if (eql (car sym) val)
                (return (cadr sym))
                nil)))
+
+(defun decode-equ (val param)
+  "Return the value of the EQU variable."
+  (let ((equ-value (get-keyword-value val *equ-list*)))
+    (cond (equ-value (encode-param equ-value param))
+          (t nil))))
 
 (defun decode-reg-sym (val)
   "Return the value of the FV-1 register or reserved symbol."
@@ -359,21 +393,21 @@ value."
   in the instruction word."))
 
 (defun encode-param (value param)
-  (ash
-   (logand (1- (ash 1 (width param)))
-           (cond ((typep value 'symbol)
-                  (cond  (; Use hex value directly if specified with $
-                          (decode-hex value))
-                         (; Use bin value directly if specified with %
-                          (decode-bin value))
-                         (; Parse if register or reserved symbol
-                          (decode-reg-sym value))
-                         (t (format t "Unrecognized symbol"))))
-                 ((typep value 'list) (eval (decode-in-list value)))
-                 ;; TODO: replace "form" with less ambiguous name
-                 ;; TODO: remove generics maybe ?
-                 (t (encode-param-m value param (form param)))))
-   (pos param)))
+  (cond ((typep value 'symbol)
+         (cond  (; Use hex value directly if specified with $
+                 (decode-hex value))
+                (; Use bin value directly if specified with %
+                 (decode-bin value))
+                (; Parse if register or reserved symbol
+                 (decode-reg-sym value))
+                (; Parse if EQU entry exists
+                 (decode-equ value param))
+                (t (format t "Unrecognized symbol"))))
+        ((typep value 'list) (eval (decode-in-list value)))
+        ((eql value nil) 0)     ; FIXME: warning here
+        ;; TODO: replace "form" with less ambiguous name
+        ;; TODO: remove generics maybe ?
+        (t (encode-param-m value param (form param)))))
 
 (defmethod encode-param-m (value param (param-type (eql 'uint)))
   value)
@@ -426,9 +460,10 @@ value."
   "Same as get-instruction-coding, but with the actual parameter values."
   (multiple-value-bind (word op)
       (process-instruction inst)
-    (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
-            (show-coding op)
-            word)))
+    (if (eql op nil) nil ; don't show anything if not real opcode
+        (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
+                (show-coding op)
+                word))))
 
 ;; Assemble test file
 ;; Read test ASM file into a list
