@@ -180,19 +180,21 @@
    (pos    :initarg :pos    :accessor pos)
    (width  :initarg :width  :accessor width)
    (form   :initarg :form   :accessor form)
-   (range  :initarg :range  :accessor range :initform nil)))
+   (range  :initarg :range  :accessor range :initform nil)
+   (op-mne :initarg :op-mne :accessor op-mne)))
 
-(defun make-param (name pos width form &optional (range nil))
+(defun make-param (mne name pos width form &optional (range nil))
   (make-instance 'fv1-param
                  :name   name
                  :pos    pos
                  :width  width
                  :form   form
-                 :range  range))
+                 :range  range
+                 :op-mne mne))
 
-(defun make-params (paramlist)
+(defun make-params (paramlist mne)
   (loop for param in paramlist collect
-        (apply #'make-param param)))
+        (apply #'make-param (append (list mne) param))))
 
 (defun pprint-param (param)
   (with-slots (name width form) param
@@ -205,7 +207,7 @@
                    :opcode   op
                    :desc-op  desc-op
                    :desc     desc
-                   :params   (make-params params))))
+                   :params   (make-params params mne))))
 
 (defun show-coding (opcode)
   "Return a representation of the instruction coding, in the style of the
@@ -298,7 +300,9 @@
 ;; Dump all opcodes + params to stdout
 (format t "Available opcodes ~%")
 (loop for opcode in *fv1-opcodes* do
+  (format t "~%")
   (print (mnemonic opcode))
+  (print (desc-op opcode))
   (print (show-coding opcode))
   (loop for param in (params opcode) do
         (print (pprint-param param))))
