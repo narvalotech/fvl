@@ -324,7 +324,8 @@
 
 ;; Process a single opcode list
 ;; loop across all possible opcodes until eql
-(defun process-instruction (inst)
+(defun process-instruction (inst &optional inst-list)
+  (declare (ignore inst-list))          ; Unused for now
   (let ((op (find-opcode (car inst))))
     (if (eql op nil)
         (values (process-statement inst) op)
@@ -456,10 +457,10 @@
 (defmethod encode-param-m (value param (param-type (eql 's1.14)))
   (encode-fixed-point 1 14 value))
 
-(defun show-binary-instruction (inst)
+(defun show-binary-instruction (inst inst-list)
   "Same as get-instruction-coding, but with the actual parameter values."
   (multiple-value-bind (word op)
-      (process-instruction inst)
+      (process-instruction inst inst-list)
     (if (eql op nil) nil ; don't show anything if not real opcode
         (format nil "~%~a~%~32,'0B~%~:*~8,'0X"
                 (show-coding op)
@@ -477,5 +478,6 @@
             unless (eql (schar line 0) #\;)
               collect (read-from-string line))))
 
-(loop for ins in (read-file "./testasm.fvl")
-      do (print (show-binary-instruction ins)))
+(let ((inst-list  (read-file "./testasm.fvl")))
+  (loop for ins in inst-list
+        do (print (show-binary-instruction ins inst-list))))
