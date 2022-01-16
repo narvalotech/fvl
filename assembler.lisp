@@ -365,12 +365,11 @@
             (t nil))
       val))
 
-(defun decode-in-list (val)
-  "Return a lisp form, replacing the known FV-1 register/symbol names with their
-value."
+(defun decode-in-list (val param)
+  "Return a lisp form, resolving each element to its real value."
   (append
    (list (car val))
-   (loop for el in (subseq val 1) collecting (decode-reg-sym el))))
+   (loop for el in (subseq val 1) collecting (encode-param el param))))
 
 (defun bor (&rest param-list)
   "Bitwise-OR on a list."
@@ -403,8 +402,9 @@ value."
                 (; Parse if EQU entry exists
                  (decode-equ value param))
                 (t (format t "Unrecognized symbol"))))
-        ((typep value 'list) (eval (decode-in-list value)))
-        ((eql value nil) 0)     ; FIXME: warning here
+        ;; If it's a list, attempt to evaluate it. Nesting is supported.
+        ((typep value 'list) (eval (decode-in-list value param)))
+        ((eql value nil) 0)     ; FIXME: raise warning here
         ;; TODO: replace "form" with less ambiguous name
         ;; TODO: remove generics maybe ?
         (t (encode-param-m value param (form param)))))

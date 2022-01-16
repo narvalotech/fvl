@@ -6,8 +6,8 @@
 (wrax DACL 0)
 (rdax ADCR 1.0)
 
-; test comment on its own line
-(cho-rda RMP0 (bor COMPC REG #x01) %0001_1100)
+; fun with parameters
+(cho-rda RMP0 (bor COMPC REG #x01) (lognot (bor %0001_0000 $0C)))
 
 (equ my-alias $01)
 (wldr 0 -2 my-alias)
