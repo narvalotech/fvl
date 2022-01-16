@@ -15,7 +15,7 @@ For more info, see assembler.lisp.
 Remaining work
 --------------
 
-- skip instructions and labels
+- be consistent with encode/decode term usage
 - mem statements (memory mgmt)
 - ihex writer
 - ihex disassembler

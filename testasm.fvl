@@ -6,8 +6,10 @@
 (wrax DACL 0)
 (rdax ADCR 1.0)
 
+(skp RUN jump-here-please)
 ; fun with parameters
 (cho-rda RMP0 (bor COMPC REG #x01) (lognot (bor %0001_0000 $0C)))
+(skp (bor ZRO GEZ) 2)
 
 (equ my-alias $01)
 (wldr 0 -2 my-alias)
@@ -17,6 +19,7 @@
 (wldr 0 -2 my-alias)
 
 ; test signed int
+(label jump-here-please)
 (wldr 0 -32768 1)
 (wldr 0 -2 1)
 

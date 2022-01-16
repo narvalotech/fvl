@@ -282,11 +282,11 @@
    '(NA    #x20) ; Do NOT add LFO to address and select cross-face coefficient
 
    ;; Used with SKP instruction
-   '(RUN #x80000000) ; Skip if NOT FIRST time through program
-   '(ZRC #x40000000) ; Skip On Zero Crossing
-   '(ZRO #x20000000) ; Skip if ACC = 0
-   '(GEZ #x10000000) ; Skip if ACC is' >= 0'
-   '(NEG #x8000000)  ; Skip if ACC is Negative
+   '(RUN #x10) ; Skip if NOT FIRST time through program
+   '(ZRC #x8) ; Skip On Zero Crossing
+   '(ZRO #x4) ; Skip if ACC = 0
+   '(GEZ #x2) ; Skip if ACC is' >= 0'
+   '(NEG #x1)  ; Skip if ACC is Negative
    ))
 
 (defparameter *equ-list*
@@ -323,7 +323,7 @@
   (cond
     ((eql (car inst) 'EQU)
      (setf *equ-list* (add-to-kv *equ-list* (nth 1 inst) (nth 2 inst))))
-    ((eql (car inst) 'LABEL) nil)
+    ((eql (car inst) 'LABEL) t) ; Ignore LABELs
     (t nil)))
 
 ;; Process a single opcode list
@@ -349,6 +349,17 @@
 ;; - type/form
 ;; - width
 ;; - position
+
+(defun resolve-skip-label (label param)
+  "Return the number of instructions to skip (until the label is found)."
+  (if (eql (op-mne param) 'skp)
+      (loop for ins in *inst-curr*
+            counting (find-opcode (car ins)) into n
+            do
+               (if (eql (nth 0 ins) 'label)
+                (if (eql (nth 1 ins) label)
+                  (return n))))
+      nil))
 
 (defun get-keyword-value (val list)
   (loop for sym in list
@@ -406,6 +417,8 @@
                  (decode-reg-sym value))
                 (; Parse if EQU entry exists
                  (decode-equ value param))
+                (; Parse if pointing to LABEL)
+                 (resolve-skip-label value param))
                 (t (format t "Unrecognized symbol"))))
         ;; If it's a list, attempt to evaluate it. Nesting is supported.
         ((typep value 'list) (eval (decode-in-list value param)))
