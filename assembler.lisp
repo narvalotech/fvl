@@ -325,7 +325,7 @@
     ((eql (car inst) 'EQU)
      (setf *equ-list* (add-to-kv *equ-list* (nth 1 inst) (nth 2 inst))))
     ((eql (car inst) 'LABEL) t) ; Ignore LABELs
-    (t nil)))
+    (t (error (format nil "Unable to parse opcode: ~A" (car inst))))))
 
 (defun process-instruction (inst)
   "Process a single instruction form (s-expression)."
@@ -417,10 +417,11 @@
                  (resolve-equ value param))
                 (; Parse if pointing to LABEL)
                  (resolve-skip-label value param))
-                (t (format t "Unrecognized symbol"))))
+                (t (error
+                    (format nil "Unable to parse param: ~A." value)))))
         ;; If it's a list, attempt to evaluate it. Nesting is supported.
         ((typep value 'list) (eval (resolve-in-list value param)))
-        ((eql value nil) 0)     ; FIXME: raise warning here
+        ((eql value nil) (error "Encoded value is NIL."))
         ;; TODO: replace "form" with less ambiguous name
         ;; TODO: remove generics maybe ?
         (t (encode-param-m value param (form param)))))
