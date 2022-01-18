@@ -308,6 +308,7 @@
         (print (pprint-param param))))
 
 (defun add-to-kv (kv name val)
+  "Add/update element in key-value table."
   (let ((pos
           (loop for el in kv
                 counting t into pos
@@ -326,9 +327,8 @@
     ((eql (car inst) 'LABEL) t) ; Ignore LABELs
     (t nil)))
 
-;; Process a single opcode list
-;; loop across all possible opcodes until eql
 (defun process-instruction (inst)
+  "Process a single instruction form (s-expression)."
   (let ((op (find-opcode (car inst))))
     (setf *inst-curr* (subseq *inst-curr* 1))
     (if (eql op nil)
@@ -345,11 +345,6 @@
                            (pos param))))
                 finally (return (values inst-word op)))))))
 
-;; Encode param depending on:
-;; - type/form
-;; - width
-;; - position
-
 (defun resolve-skip-label (label param)
   "Return the number of instructions to skip (until the label is found)."
   (if (eql (op-mne param) 'skp)
@@ -362,6 +357,7 @@
       nil))
 
 (defun get-keyword-value (val list)
+  "Return the value of a symbol if it exists in the given table."
   (loop for sym in list
         do (if (eql (car sym) val)
                (return (cadr sym))
