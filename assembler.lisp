@@ -430,11 +430,13 @@
   value)
 
 (defun saturate (int-bits frac-bits value)
-  ;; TODO: emit warning/condition on saturation
-  (cond
-    ((>= value (ash 1 (+ int-bits frac-bits)))
-     (1- (ash 1 (+ int-bits frac-bits))))
-    (t value)))
+  (let ((limit (1- (ash 1 (+ int-bits frac-bits)))))
+    (cond
+      ((> value limit)
+       (progn
+         (warn "Saturation: #x~x -> #x~x" value limit)
+         limit))
+      (t value))))
 
 (defun encode-fixed-point (int-bits frac-bits value)
   (let ((fixed (truncate (* (abs value) (ash 1 frac-bits)))))
