@@ -367,13 +367,13 @@
                (return (cadr sym))
                nil)))
 
-(defun decode-equ (val param)
+(defun resolve-equ (val param)
   "Return the value of the EQU variable."
   (let ((equ-value (get-keyword-value val *equ-list*)))
     (cond (equ-value (encode-param equ-value param))
           (t nil))))
 
-(defun decode-reg-sym (val)
+(defun resolve-reg-sym (val)
   "Return the value of the FV-1 register or reserved symbol."
   (if (typep val 'symbol)
       (cond ((get-keyword-value val *fv1-registers*))
@@ -381,7 +381,7 @@
             (t nil))
       val))
 
-(defun decode-in-list (val param)
+(defun resolve-in-list (val param)
   "Return a lisp form, resolving each element to its real value."
   (append
    (list (car val))
@@ -391,13 +391,15 @@
   "Bitwise-OR on a list."
   (reduce 'logior param-list))
 
-(defun decode-hex (val)
+(defun read-spin-hex (val)
+  "Return binary value of hex value specified with SpinASM syntax."
   (if (eql (schar (string val) 0) #\$)
       (read-from-string
        (format nil "#x~A" (subseq (string val) 1)))
       nil))
 
-(defun decode-bin (val)
+(defun read-spin-bin (val)
+  "Return binary value of bit vector value specified with SpinASM syntax."
   (if (eql (schar (string val) 0) #\%)
       (read-from-string
        (format nil "#b~A" (subseq (remove #\_ (string val)) 1)))
@@ -410,18 +412,18 @@
 (defun encode-param (value param)
   (cond ((typep value 'symbol)
          (cond  (; Use hex value directly if specified with $
-                 (decode-hex value))
+                 (read-spin-hex value))
                 (; Use bin value directly if specified with %
-                 (decode-bin value))
+                 (read-spin-bin value))
                 (; Parse if register or reserved symbol
-                 (decode-reg-sym value))
+                 (resolve-reg-sym value))
                 (; Parse if EQU entry exists
-                 (decode-equ value param))
+                 (resolve-equ value param))
                 (; Parse if pointing to LABEL)
                  (resolve-skip-label value param))
                 (t (format t "Unrecognized symbol"))))
         ;; If it's a list, attempt to evaluate it. Nesting is supported.
-        ((typep value 'list) (eval (decode-in-list value param)))
+        ((typep value 'list) (eval (resolve-in-list value param)))
         ((eql value nil) 0)     ; FIXME: raise warning here
         ;; TODO: replace "form" with less ambiguous name
         ;; TODO: remove generics maybe ?
