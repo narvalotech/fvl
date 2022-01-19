@@ -486,7 +486,7 @@
 
 ;; Assemble test file
 ;; Read test ASM file into a list
-;; Note: need to set directory to where this file is first.
+;; Note: need to set (repl) directory to where this file is before calling.
 (defun read-file (filename)
   (with-open-file
       (stream (uiop:parse-unix-namestring filename))
