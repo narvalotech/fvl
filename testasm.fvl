@@ -23,4 +23,11 @@
 (wldr 0 -32768 1)
 (wldr 0 -2 1)
 
+; memory
+(mem delay-left 2048)
+(mem delay-right 1024)
+(rdax ADCR 1.0)
+(wra delay-left 0.25)
+(wra delay-right 0.5)
+
 ; end-of-file

@@ -319,12 +319,35 @@
         (setf kv (append kv (list (list name val)))))
     kv))
 
+(defparameter *memory-max-bytes* 32768)
+(defparameter *memory-blocks*
+  ; (name (addr size))
+  (list '(nil (0 0))))
+
+(defun get-next-free-addr ()
+  "Gets address after last byte of allocated memory."
+  (loop for el in *memory-blocks*
+        finally
+           (return
+             (+ (nth 0 (nth 1 el))
+                (nth 1 (nth 1 el))))))
+
+(defun create-mem-region (name size)
+  "Allocate a new memory region in order. Not smart."
+  (let ((addr (get-next-free-addr)))
+    (if (< (+ addr size) *memory-max-bytes*)
+        (setf *memory-blocks*
+              (append *memory-blocks*
+                      (list (list name (list addr size)))))
+        (error "Memory capacity exceeded."))))
+
 (defun process-statement (inst)
   "Process statements that are not FV-1 opcodes (e.g. EQU, LABEL, etc)."
   (cond
     ((eql (car inst) 'EQU)
-     (setf *equ-list* (add-to-kv *equ-list* (nth 1 inst) (nth 2 inst))))
+     (setf *equ-list* (add-to-kv *equ-list* (nth 1 inst) (nth 2 inst))) t)
     ((eql (car inst) 'LABEL) t) ; Ignore LABELs
+    ((eql (car inst) 'MEM) (create-mem-region (nth 1 inst) (nth 2 inst)) t)
     (t (error (format nil "Unable to parse opcode: ~A" (car inst))))))
 
 (defun process-instruction (inst)
@@ -362,6 +385,12 @@
         do (if (eql (car sym) val)
                (return (cadr sym))
                nil)))
+
+(defun resolve-addr (val)
+  "Return the value of the EQU variable."
+  (let ((equ-value (get-keyword-value val *memory-blocks*)))
+    (cond (equ-value (car equ-value))
+          (t nil))))
 
 (defun resolve-equ (val param)
   "Return the value of the EQU variable."
@@ -415,8 +444,10 @@
                  (resolve-reg-sym value))
                 (; Parse if EQU entry exists
                  (resolve-equ value param))
-                (; Parse if pointing to LABEL)
+                (; Parse if pointing to LABEL
                  (resolve-skip-label value param))
+                (; Return address if pointing to mem region
+                 (resolve-addr value))
                 (t (error
                     (format nil "Unable to parse param: ~A." value)))))
         ;; If it's a list, attempt to evaluate it. Nesting is supported.
@@ -501,5 +532,9 @@
 
 (let* ((*inst-list*  (read-file "./testasm.fvl"))
        (*inst-curr* *inst-list*))
+  (setf *memory-blocks*
+        (list '(nil (0 0))))
+  (setf *equ-list*
+        (list '(nil nil)))
   (loop for ins in *inst-list*
         do (print (show-binary-instruction ins))))

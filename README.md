@@ -16,6 +16,7 @@ Remaining work
 --------------
 
 - mem statements (memory mgmt)
+  - mem accessors (first, mid, last, etc..)
 - ihex writer
 - ihex disassembler
 - reader for .spn syntax
