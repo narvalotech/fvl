@@ -386,11 +386,24 @@
                (return (cadr sym))
                nil)))
 
-(defun resolve-addr (val)
+(defun resolve-addr (val &key pos)
   "Return the value of the EQU variable."
   (let ((equ-value (get-keyword-value val *memory-blocks*)))
-    (cond (equ-value (car equ-value))
-          (t nil))))
+    (let ((offset (cond
+                    ((eql pos nil) 0)
+                    ((eql pos 'start) 0)
+                    ((eql pos 'end) (1- (nth 1 equ-value)))
+                    ((eql pos 'middle) (1- (ceiling (/ (nth 1 equ-value) 2)))))))
+      (cond (equ-value (+ (car equ-value) offset))
+            (t nil)))))
+
+(defun mem-middle (name)
+  "Return the address of the midpoint of the named memory region."
+  (resolve-addr name :pos 'middle))
+
+(defun mem-end (name)
+  "Return the address of the last byte of the named memory region."
+  (resolve-addr name :pos 'end))
 
 (defun resolve-equ (val param)
   "Return the value of the EQU variable."
@@ -450,8 +463,14 @@
                  (resolve-addr value))
                 (t (error
                     (format nil "Unable to parse param: ~A." value)))))
-        ;; If it's a list, attempt to evaluate it. Nesting is supported.
-        ((typep value 'list) (eval (resolve-in-list value param)))
+        ((typep value 'list)
+         (cond
+           ;; Don't resolve memory region names for memory helpers
+           ((or (eql (car value) 'mem-middle)
+                (eql (car value) 'mem-end))
+           (funcall (car value) (cadr value)))
+           ;; Attempt to evaluate s-exp, resolving symbols recursively.
+           (t (eval (resolve-in-list value param)))))
         ((eql value nil) (error "Encoded value is NIL."))
         ;; TODO: replace "form" with less ambiguous name
         ;; TODO: remove generics maybe ?
