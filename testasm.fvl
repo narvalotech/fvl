@@ -29,6 +29,8 @@
 (rdax ADCR 1.0)
 (wra delay-left 0.25)
 (wra (mem-middle delay-left) 0.25)
+(wra delay-left^ 0.25)
 (wra (mem-end delay-right) 0.5)
+(wra delay-right# 0.5)
 
 ; end-of-file

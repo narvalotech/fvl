@@ -386,16 +386,31 @@
                (return (cadr sym))
                nil)))
 
+(defun remove-from-symbol (val char)
+  (read-from-string (remove char (string val))))
+
 (defun resolve-addr (val &key pos)
-  "Return the value of the EQU variable."
-  (let ((equ-value (get-keyword-value val *memory-blocks*)))
-    (let ((offset (cond
-                    ((eql pos nil) 0)
-                    ((eql pos 'start) 0)
-                    ((eql pos 'end) (1- (nth 1 equ-value)))
-                    ((eql pos 'middle) (1- (ceiling (/ (nth 1 equ-value) 2)))))))
-      (cond (equ-value (+ (car equ-value) offset))
-            (t nil)))))
+  "Return the address of the named memory region."
+  (cond ((search "^" (string val))
+         (setf pos 'middle)
+         (setf val (remove-from-symbol val #\^)))
+
+        ((search "#" (string val))
+         (setf pos 'end)
+         (setf val (remove-from-symbol val #\#))))
+
+  (let ((mem-region (get-keyword-value val *memory-blocks*)))
+    (if (and mem-region (nth 1 mem-region))
+        (let* ((addr (coerce (nth 1 mem-region) 'integer))
+               (offset
+                 (cond
+                   ((eql pos nil) 0)
+                   ((eql pos 'start) 0)
+                   ((eql pos 'end) (1- addr))
+                   ((eql pos 'middle) (1- (ceiling (/ addr 2))))
+                   (t 0))))
+          (+ (car mem-region) offset))
+        nil)))
 
 (defun mem-middle (name)
   "Return the address of the midpoint of the named memory region."
