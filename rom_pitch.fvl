@@ -30,7 +30,7 @@
 (cho-rda rmp0 rptr2 (+ 1 rdel))
 (cho-sof rmp0 (bor na compc) 0)
 (cho-rda rmp0 na dtemp)
-(wrax dacl 0)
+(wrax dacr 0)
 
 (rdax pot0 1.0)
 (sof .25 -.125)
