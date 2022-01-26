@@ -320,17 +320,17 @@
     kv))
 
 (defparameter *memory-max-bytes* 32768)
-(defparameter *memory-blocks*
-  ; (name (addr size))
-  (list '(nil (0 0))))
+(defparameter *memory-blocks* nil) ; format: (name (addr size))
 
 (defun get-next-free-addr ()
   "Gets address after last byte of allocated memory."
-  (loop for el in *memory-blocks*
-        finally
-           (return
-             (+ (nth 0 (nth 1 el))
-                (nth 1 (nth 1 el))))))
+  (if (not *memory-blocks*) 0
+      (loop for el in *memory-blocks*
+            finally
+               (return
+                 (+ 1 ; spinasm adds 1 after each region
+                    (nth 0 (nth 1 el))
+                    (nth 1 (nth 1 el)))))))
 
 (defun create-mem-region (name size)
   "Allocate a new memory region in order. Not smart."
@@ -598,8 +598,7 @@
 (let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
        (*inst-curr* *inst-list*)
        (*curr-addr* 0))
-  (setf *memory-blocks*
-        nil)
+  (setf *memory-blocks* nil)
   (setf *equ-list*
         (list '(nil nil)))
   (loop for ins in *inst-list*
@@ -607,8 +606,7 @@
 
 (let* ((*inst-list*  (read-file "./testasm.fvl"))
        (*inst-curr* *inst-list*))
-  (setf *memory-blocks*
-        (list '(nil (0 0))))
+  (setf *memory-blocks* nil)
   (setf *equ-list*
         (list '(nil nil)))
   (loop for ins in *inst-list*
