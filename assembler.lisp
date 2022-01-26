@@ -540,6 +540,32 @@
 (defmethod encode-param-m (value param (param-type (eql 's1.14)))
   (encode-fixed-point 1 14 value))
 
+; Poor man's intel hex formatting
+; 512 instructions per-program
+(defun bytes-from-string (str)
+  "Converts a string of hex bytes to a list of numbers."
+  (loop for c across str
+        when (eql 0 (mod i 2))
+          collect (read-from-string
+                   (format nil "#x~A" (subseq str i (+ 2 i))))
+        counting t into i))
+
+(defun calc-ihex-checksum (str)
+  "Calculate intel hex checksum."
+  (logand #xFF (1+ (lognot (reduce '+ (bytes-from-string str))))))
+
+(defparameter *curr-addr* 0)
+(defun encode-ihex (word)
+  "Encodes a single instruction word in intel hex format."
+  (let ((repr (format nil "04~4,'0X00~8,'0X" *curr-addr* word)))
+    (setf *curr-addr* (+ 4 *curr-addr*))
+    (format nil ":~A~2,'0X"
+            repr
+            (calc-ihex-checksum repr))))
+
+(defun encode-ihex-eof ()
+  (format nil ":00000001FF"))
+
 (defun show-binary-instruction (inst)
   "Same as get-instruction-coding, but with the actual parameter values."
   (multiple-value-bind (word op)
@@ -563,6 +589,21 @@
 
 (defparameter *inst-list* '())
 (defparameter *inst-curr* '())
+
+(defun show-ihex (inst)
+  (let ((word (process-instruction inst)))
+    (cond ((typep word 'integer) (print (encode-ihex word)))
+          (t nil))))
+
+(let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
+       (*inst-curr* *inst-list*)
+       (*curr-addr* 0))
+  (setf *memory-blocks*
+        nil)
+  (setf *equ-list*
+        (list '(nil nil)))
+  (loop for ins in *inst-list*
+        do (show-ihex ins)))
 
 (let* ((*inst-list*  (read-file "./testasm.fvl"))
        (*inst-curr* *inst-list*))

@@ -15,6 +15,5 @@ For more info, see assembler.lisp.
 Remaining work
 --------------
 
-- ihex writer
 - ihex disassembler
 - reader for .spn syntax
