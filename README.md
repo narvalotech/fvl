@@ -15,5 +15,7 @@ For more info, see assembler.lisp.
 Remaining work
 --------------
 
+- "project builder" like spinasm
+  - build a program image based on multiple asm sources
 - ihex disassembler
-- reader for .spn syntax
+- reader/converter for .spn syntax

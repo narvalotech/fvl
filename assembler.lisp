@@ -350,10 +350,11 @@
     ((eql (car inst) 'MEM) (create-mem-region (nth 1 inst) (nth 2 inst)) t)
     (t (error (format nil "Unable to parse opcode: ~A" (car inst))))))
 
-(defun process-instruction (inst)
+(defun process-instruction (inst &key generated)
   "Process a single instruction form (s-expression)."
   (let ((op (find-opcode (car inst))))
-    (setf *inst-curr* (subseq *inst-curr* 1))
+    ;; Increment only if instruction originates from source file
+    (if (not generated) (setf *inst-curr* (subseq *inst-curr* 1)))
     (if (eql op nil)
         (values (process-statement inst) op)
         (let ((inst-word (logand #xFFFFFFFF (opcode op))))
@@ -590,9 +591,10 @@
 (defparameter *inst-list* '())
 (defparameter *inst-curr* '())
 
-(defun show-ihex (inst)
-  (let ((word (process-instruction inst)))
-    (cond ((typep word 'integer) (print (encode-ihex word)))
+(defun show-ihex (inst &key generated)
+  (let ((word (process-instruction inst :generated generated)))
+    (cond ((typep word 'integer)
+           (print (encode-ihex word)))
           (t nil))))
 
 (let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
@@ -602,7 +604,10 @@
   (setf *equ-list*
         (list '(nil nil)))
   (loop for ins in *inst-list*
-        do (show-ihex ins)))
+        do (show-ihex ins))
+  (loop until (eql 0 (mod *curr-addr* #x200))
+        do (show-ihex '(nop) :generated t)))
+
 
 (let* ((*inst-list*  (read-file "./testasm.fvl"))
        (*inst-curr* *inst-list*))
