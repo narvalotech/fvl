@@ -15,6 +15,7 @@ For more info, see assembler.lisp.
 Remaining work
 --------------
 
+- looping test using SKP instructions
 - "project builder" like spinasm
   - build a program image based on multiple asm sources
 - ihex disassembler
