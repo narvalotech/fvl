@@ -18,7 +18,7 @@
   (loop for text in text-list
         counting t into i do
           (grid
-           (make-instance 'button :master master :text text)
+           (make-instance 'button :master master :text text :width 10)
            0 i)))
 
 (with-ltk ()
@@ -42,11 +42,13 @@
     ;; Add some padding (might remove later)
     (configure file-buttons-frame :padding "5 5 5 5")
     (configure block-buttons-frame :padding "5 5 5 5")
-    (configure tooltip-frame :padding "20 20 20 20")
+    (configure tooltip-frame :padding "10 5 10 10")
 
     ;; Allow resizing of the two main frames
     (grid-columnconfigure *tk* 0 :weight 1)
-    (grid-rowconfigure *tk* 0 :weight 1)
+    (grid-rowconfigure *tk* 1 :weight 1)
+    ;; Prevent toolbar from being resized
+    (grid-rowconfigure *tk* 0 :weight 0)
 
     ;; Allow resizing of widgets inside toolbar frame
     (grid-columnconfigure toolbar-frame 0 :weight 1)
@@ -55,14 +57,20 @@
     (grid-rowconfigure toolbar-frame 1 :weight 1)
 
     ;; Set minimum size for tooltip text
-    (grid-columnconfigure toolbar-frame 1 :minsize 200)
+    (grid-columnconfigure toolbar-frame 1 :minsize 350)
 
     ;; Spawn file buttons
     (make-buttons (list "save" "spinoff" "upload" "upload-next") file-buttons-frame)
     ;; Spawm DSP block buttons
     (make-buttons (list "insert" "configure" "connect" "disconnect") block-buttons-frame)
     ;; Dummy tooltip
-    (grid (make-instance 'label :master tooltip-frame :text "Did you know ?") 0 0)
+    (grid (make-instance 'label :master tooltip-frame :wraplength 300 :text (some-text)) 0 0 :sticky "nw")
     ;; Make node editor widget
     (grid (make-instance 'canvas :master node-editor-frame) 0 0)
+
+    ;; Stop window from getting too small
+    (minsize *tk* 800 500)
     ))
+
+(defun some-text ()
+  (format nil "Did you know ? This is a helpful tooltip, blah blah blah~%Linefeed haha"))
