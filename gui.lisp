@@ -23,6 +23,8 @@
 
 (with-ltk ()
   (wm-title *tk* "FV-1 studio")
+  (ltk::use-theme "clam")
+
   (let* ((toolbar-frame      (make-instance 'frame :borderwidth 2 :relief :solid))
         (file-buttons-frame  (make-instance 'frame :master toolbar-frame :borderwidth 2 :relief :groove))
         (block-buttons-frame (make-instance 'frame :master toolbar-frame :borderwidth 2 :relief :groove))
