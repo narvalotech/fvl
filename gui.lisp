@@ -21,8 +21,26 @@
            (make-instance 'button :master master :text text :width 10)
            0 i :padx 5)))
 
+(defun rect-coords (x y width height)
+  (let ((ret-x (max (- x (/ width 2)) 0))
+        (ret-y (max (- y (/ height 2)) 0)))
+    (list
+     ret-x ret-y
+     (+ width ret-x) (+ height ret-y))))
+
+;; (exit-wish)
+;; (make-node-editor node-editor-frame)
 (defun make-node-editor (master)
-  (make-instance 'canvas :master master))
+  (grid
+   (let ((canvas (make-instance 'canvas :master master)))
+
+     ;; Spawn node / square
+     (let ((rect-handle (create-rectangle canvas 50 50 100 100)))
+       ;; Move square to mouse position on click
+       (bind canvas "<B1-Motion>" #'(lambda (evt)
+                              (set-coords canvas rect-handle
+                                           (rect-coords (event-x evt) (event-y evt) 50 50)))))
+     ) 0 0 :sticky "nsew"))
 
 (defun some-text ()
   (format nil "Did you know ? This is a helpful tooltip, blah blah blah~%Linefeed haha"))
@@ -75,8 +93,12 @@
 (make-buttons (list "insert" "configure" "connect" "disconnect") block-buttons-frame)
 ;; Dummy tooltip
 (grid (make-instance 'label :master tooltip-frame :wraplength 300 :text (some-text)) 0 0 :sticky "nw")
+
 ;; Make node editor widget
-(grid (make-node-editor node-editor-frame) 0 0)
+(make-node-editor node-editor-frame)
+;; Make it expand to fill frame width
+(grid-rowconfigure node-editor-frame 0 :weight 1)
+(grid-columnconfigure node-editor-frame 0 :weight 1)
 
 ;; Stop window from getting too small
 (minsize *tk* 800 500)
