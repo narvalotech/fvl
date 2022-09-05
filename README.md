@@ -16,8 +16,10 @@ Remaining work
 --------------
 
 - GUI editor
+- Allow function/macro `blocks` in the assembly
 - looping test using SKP instructions
 - "project builder" like spinasm
   - build a program image based on multiple asm sources
 - ihex disassembler
 - reader/converter for .spn syntax
+
