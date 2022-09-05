@@ -39,7 +39,8 @@
        ;; Move square to mouse position on click
        (bind canvas "<B1-Motion>" #'(lambda (evt)
                               (set-coords canvas rect-handle
-                                           (rect-coords (event-x evt) (event-y evt) 50 50)))))
+                                          (rect-coords (event-x evt) (event-y evt) 50 50)))))
+     ;;  do stuff
      ) 0 0 :sticky "nsew"))
 
 (defun some-text ()
@@ -54,6 +55,7 @@
 (defparameter toolbar-frame       (make-instance 'frame :borderwidth 2 :relief :solid))
 (defparameter file-buttons-frame  (make-instance 'frame :master toolbar-frame :borderwidth 2))
 (defparameter block-buttons-frame (make-instance 'frame :master toolbar-frame :borderwidth 2))
+(defparameter block-params-frame  (make-instance 'frame :master toolbar-frame :borderwidth 2))
 (defparameter tooltip-frame       (make-instance 'labelframe :master toolbar-frame :text "Tooltips"))
 (defparameter node-editor-frame   (make-instance 'frame :borderwidth 2 :relief :solid))
 
@@ -65,6 +67,7 @@
 ;; Place button frames in the toolbar frame
 (grid file-buttons-frame  0 0 :padx 0 :pady 0)
 (grid block-buttons-frame 1 0 :padx 0 :pady 0)
+(grid block-params-frame  2 0 :padx 0 :pady 0)
 (grid tooltip-frame       0 1 :padx 10 :pady 10 :rowspan 2 :sticky "nsew")
 
 ;; Add some padding (might remove later)
@@ -91,6 +94,14 @@
 (make-buttons (list "save" "spinoff" "upload" "upload-next") file-buttons-frame)
 ;; Spawn DSP block buttons
 (make-buttons (list "insert" "configure" "connect" "disconnect") block-buttons-frame)
+;; Spawn DSP block parameter lists
+(defparameter block-select (make-instance 'combobox :master block-params-frame :values '(filter limiter distortion) :state 'readonly))
+(configure block-select :state 'readonly)
+(slot-value block-select :state )
+(grid block-select 1 0 :pady 5)
+(bind block-select "<<ComboboxSelected>>"
+      (lambda (evt) (format t "block is now ~a~% (evt ~a)" (text block-select) evt)))
+
 ;; Dummy tooltip
 (grid (make-instance 'label :master tooltip-frame :wraplength 300 :text (some-text)) 0 0 :sticky "nw")
 
@@ -109,4 +120,3 @@
 ;; Close TK connection when window is closed
 (on-focus toplevel (lambda (evt) (exit-wish)))
 ;; (exit-wish)
-
