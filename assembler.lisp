@@ -567,6 +567,36 @@
 (defun encode-ihex-eof ()
   (format nil ":00000001FF"))
 
+(defun get-byte (word pos)
+  (ldb (byte 8 (* pos 8)) word))
+
+(defun word-to-c-array (word)
+  "Formats a 32-bit word to a 8-bit c array format"
+  (format nil "0x~2,'0X, 0x~2,'0X, 0x~2,'0X, 0x~2,'0X,~%"
+          (get-byte word 3)
+          (get-byte word 2)
+          (get-byte word 1)
+          (get-byte word 0)))
+
+(defun nop-padding (amount)
+  (loop repeat amount collect (process-instruction '(nop) :generated t)))
+
+(defun inst-words-to-c-array (words)
+  (loop for word in words
+        if (typep word 'integer)
+          collecting (word-to-c-array word)))
+
+(defun encode-c-header (inst-list)
+  "Convert an instruction list to a C header, padded with NOPs"
+  (let ((nops (nop-padding (- 512 (length inst-list))))
+        (words (loop for ins in inst-list collect (process-instruction ins))))
+
+    (concatenate 'string
+                 (format nil "uint8_t program[512] = {~%")
+                 (format nil "~{~a~}" (inst-words-to-c-array words))
+                 (format nil "~{~a~}" (inst-words-to-c-array nops))
+                 (format nil "};~%"))))
+
 (defun show-binary-instruction (inst)
   "Same as get-instruction-coding, but with the actual parameter values."
   (multiple-value-bind (word op)
@@ -608,6 +638,12 @@
   (loop until (eql 0 (mod *curr-addr* #x200))
         do (show-ihex '(nop) :generated t)))
 
+(let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
+       (*inst-curr* *inst-list*))
+  (setf *memory-blocks* nil)
+  (setf *equ-list*
+        (list '(nil nil)))
+  (format t "~a" (encode-c-header *inst-list*)))
 
 (let* ((*inst-list*  (read-file "./testasm.fvl"))
        (*inst-curr* *inst-list*))
