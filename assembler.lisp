@@ -369,6 +369,15 @@
                            (pos param))))
                 finally (return (values inst-word op)))))))
 
+(defun nop-padding (amount)
+  (loop repeat amount collect (process-instruction '(nop) :generated t)))
+
+(defun process-instructions (inst-list &key padding)
+  (append
+   (loop for ins in inst-list collect (process-instruction ins))
+   (if padding
+       (nop-padding (- 512 (length inst-list))))))
+
 (defun resolve-skip-label (label param)
   "Return the number of instructions to skip (until the label is found)."
   (if (eql (op-mne param) 'skp)
@@ -578,9 +587,6 @@
           (get-byte word 1)
           (get-byte word 0)))
 
-(defun nop-padding (amount)
-  (loop repeat amount collect (process-instruction '(nop) :generated t)))
-
 (defun inst-words-to-c-array (words)
   (loop for word in words
         if (typep word 'integer)
@@ -588,14 +594,10 @@
 
 (defun encode-c-header (inst-list)
   "Convert an instruction list to a C header, padded with NOPs"
-  (let ((nops (nop-padding (- 512 (length inst-list))))
-        (words (loop for ins in inst-list collect (process-instruction ins))))
-
-    (concatenate 'string
-                 (format nil "uint8_t program[512] = {~%")
-                 (format nil "~{~a~}" (inst-words-to-c-array words))
-                 (format nil "~{~a~}" (inst-words-to-c-array nops))
-                 (format nil "};~%"))))
+  (concatenate 'string
+               (format nil "uint8_t program[] = {~%")
+               (format nil "~{~a~}" (inst-words-to-c-array (process-instructions inst-list :padding t)))
+               (format nil "};~%")))
 
 (defun show-binary-instruction (inst)
   "Same as get-instruction-coding, but with the actual parameter values."
