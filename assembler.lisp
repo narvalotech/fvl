@@ -654,3 +654,50 @@
         (list '(nil nil)))
   (loop for ins in *inst-list*
         do (print (show-binary-instruction ins))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make serial packet
+;; we pad with NOPs on the target side by default
+(defun words->bytes-be (words)
+  "List of 32-bit words -> list of big-endiant 8-bit bytes."
+  (loop for word in words
+        if (typep word 'integer)
+        nconc
+        (loop for pos in '(3 2 1 0)
+              collect (ldb (byte 8 (* pos 8)) word))))
+
+(defun string->bytes (string)
+  "Assumes we only uses chars <127."
+  (loop for char across string
+        collect (char-code char)))
+
+(defun u16->bytes-be (number)
+  (loop for pos in '(1 0)
+        collect (ldb (byte 8 (* pos 8)) number)))
+
+(defun crc (data)
+  "Calculate basic CRC-8 for the given data. Not implemented yet."
+  (declare (ignore data))
+  '(0))
+
+(defun make-packet (data)
+  (append
+   (string->bytes "FV1")
+   '(#x00)                              ; only one opcode for now
+   (crc data)
+   (u16->bytes-be (length data))
+   data))
+
+;; Data to be encapsulated in serial packet:
+(defparameter *test*
+  (let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
+         (*inst-curr* *inst-list*))
+    (setf *memory-blocks* nil)
+    (setf *equ-list*
+          (list '(nil nil)))
+    (words->bytes-be
+     (process-instructions *inst-list*))))
+
+(make-packet *test*)
+(format t "~{~X ~}" *test*)
+
