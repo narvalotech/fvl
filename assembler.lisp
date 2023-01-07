@@ -689,15 +689,33 @@
    data))
 
 ;; Data to be encapsulated in serial packet:
-(defparameter *test*
-  (let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
+(defun assemble (asm-file-path)
+  (let* ((*inst-list*  (read-file asm-file-path))
          (*inst-curr* *inst-list*))
     (setf *memory-blocks* nil)
     (setf *equ-list*
           (list '(nil nil)))
-    (words->bytes-be
-     (process-instructions *inst-list*))))
 
-(make-packet *test*)
-(format t "~{~X ~}" *test*)
+     (words->bytes-be
+      (process-instructions *inst-list*))))
 
+(defparameter *packet*
+  (make-packet (assemble "./rom_pitch.fvl")))
+
+;; Output for usage with xxd
+;; (format t "~{~2,'0X~}~%" *packet*)
+;; (format t "~{~2,'0X ~}~%" *packet*)
+
+(ql:quickload "usocket")
+
+;; Open socket-serial link using `socat`:
+;; `socat tcp-l:42069,reuseaddr,fork GOPEN:/dev/ttyACM0,b115200,rawer'
+(defun send-socket (port bytes)
+  (usocket:with-client-socket (socket stream "127.0.0.1" port :element-type '(unsigned-byte 8))
+    (progn
+      (loop for b in bytes
+            do (write-byte b stream))
+      (force-output stream))))
+
+(send-socket 42069
+             (make-packet (assemble "./rom_pitch.fvl")))
