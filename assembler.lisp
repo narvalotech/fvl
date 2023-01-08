@@ -706,16 +706,9 @@
 ;; (format t "~{~2,'0X~}~%" *packet*)
 ;; (format t "~{~2,'0X ~}~%" *packet*)
 
-(ql:quickload "usocket")
+;; Send over UART
+(ql:quickload "cserial-port")
 
-;; Open socket-serial link using `socat`:
-;; `socat tcp-l:42069,reuseaddr,fork GOPEN:/dev/ttyACM0,b115200,rawer'
-(defun send-socket (port bytes)
-  (usocket:with-client-socket (socket stream "127.0.0.1" port :element-type '(unsigned-byte 8))
-    (progn
-      (loop for b in bytes
-            do (write-byte b stream))
-      (force-output stream))))
-
-(send-socket 42069
-             (make-packet (assemble "./rom_pitch.fvl")))
+(cserial-port:with-serial (rs "/dev/ttyACM0" :baud-rate 115200 :data-bits 8 :stop-bits 1 :parity :none)
+  (loop for byte in (make-packet (assemble "./rom_pitch.fvl"))
+        do (cserial-port:write-serial-byte byte rs)))
