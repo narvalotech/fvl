@@ -1,0 +1,17 @@
+(mem ldel 4096)
+(mem rdel 4096)
+(mem dtemp 1)
+
+(equ potfil reg0)
+
+(skp run loop)
+(wldr 0 0 4096)
+
+(label loop)
+
+(rdax adcl 1.0)
+(wra ldel 0.0)
+(rdax adcr 1.0)
+(wra rdel 0.0)
+
+; EOF

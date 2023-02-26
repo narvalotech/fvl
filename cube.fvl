@@ -1,0 +1,13 @@
+(equ temp reg0)
+
+(rdax adcl 1)
+
+(wrax temp -0.33333)
+(mulx temp)
+(mulx temp)
+(rdax temp 1)
+(sof 1.5 0)
+
+(sof 2 0)
+(wrax dacl .5)
+(wrax dacr .5)
