@@ -659,7 +659,7 @@
 ;; make serial packet
 ;; we pad with NOPs on the target side by default
 (defun words->bytes-be (words)
-  "List of 32-bit words -> list of big-endiant 8-bit bytes."
+  "List of 32-bit words -> list of big-endian 8-bit bytes."
   (loop for word in words
         if (typep word 'integer)
         nconc
@@ -680,10 +680,10 @@
   (declare (ignore data))
   '(0))
 
-(defun make-packet (data)
+(defun make-packet (op data)
   (append
    (string->bytes "FV1")
-   '(#x00)                              ; only one opcode for now
+   (list op)
    (crc data)
    (u16->bytes-be (length data))
    data))
@@ -700,7 +700,11 @@
       (process-instructions *inst-list*))))
 
 (defparameter *packet*
-  (make-packet (assemble "./rom_pitch.fvl")))
+  (make-packet #x00 (assemble "./rom_pitch.fvl")))
+
+(defun format-pot-values (vals)
+  (loop for val in vals
+        nconc (u16->bytes-be val)))
 
 ;; Output for usage with xxd
 ;; (format t "~{~2,'0X~}~%" *packet*)
@@ -709,6 +713,14 @@
 ;; Send over UART
 (ql:quickload "cserial-port")
 
-(cserial-port:with-serial (rs "/dev/ttyACM0" :baud-rate 115200 :data-bits 8 :stop-bits 1 :parity :none)
-  (loop for byte in (make-packet (assemble "./rom_pitch.fvl"))
-        do (cserial-port:write-serial-byte byte rs)))
+(defun send-serial (buffer)
+  (cserial-port:with-serial (rs "/dev/ttyACM0" :baud-rate 115200 :data-bits 8 :stop-bits 1 :parity :none)
+    (loop for byte in buffer
+          do (cserial-port:write-serial-byte byte rs))))
+
+(send-serial (make-packet #x00 (assemble "./soft-dist.fvl")))
+(send-serial (make-packet #x00 (assemble "./rom_pitch.fvl")))
+
+(send-serial (make-packet #x01 (format-pot-values '(100 500 1000))))
+(send-serial (make-packet #x01 (format-pot-values '(0 0 0))))
+
