@@ -629,7 +629,7 @@
            (print (encode-ihex word)))
           (t nil))))
 
-(let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
+(let* ((*inst-list*  (read-file "./programs/rom_pitch.fvl"))
        (*inst-curr* *inst-list*)
        (*curr-addr* 0))
   (setf *memory-blocks* nil)
@@ -640,14 +640,14 @@
   (loop until (eql 0 (mod *curr-addr* #x200))
         do (show-ihex '(nop) :generated t)))
 
-(let* ((*inst-list*  (read-file "./rom_pitch.fvl"))
+(let* ((*inst-list*  (read-file "./programs/rom_pitch.fvl"))
        (*inst-curr* *inst-list*))
   (setf *memory-blocks* nil)
   (setf *equ-list*
         (list '(nil nil)))
   (format t "~a" (encode-c-header *inst-list*)))
 
-(let* ((*inst-list*  (read-file "./testasm.fvl"))
+(let* ((*inst-list*  (read-file "./programs/testasm.fvl"))
        (*inst-curr* *inst-list*))
   (setf *memory-blocks* nil)
   (setf *equ-list*
@@ -700,7 +700,7 @@
       (process-instructions *inst-list*))))
 
 (defparameter *packet*
-  (make-packet #x00 (assemble "./rom_pitch.fvl")))
+  (make-packet #x00 (assemble "./programs/rom_pitch.fvl")))
 
 (defun format-pot-values (vals)
   (loop for val in vals
@@ -718,8 +718,8 @@
     (loop for byte in buffer
           do (cserial-port:write-serial-byte byte rs))))
 
-(send-serial (make-packet #x00 (assemble "./soft-dist.fvl")))
-(send-serial (make-packet #x00 (assemble "./rom_pitch.fvl")))
+(send-serial (make-packet #x00 (assemble "./programs/soft-dist.fvl")))
+(send-serial (make-packet #x00 (assemble "./programs/rom_pitch.fvl")))
 
 (send-serial (make-packet #x01 (format-pot-values '(100 500 1000))))
 (send-serial (make-packet #x01 (format-pot-values '(0 0 0))))
