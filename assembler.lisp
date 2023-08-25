@@ -685,7 +685,8 @@
    (string->bytes "FV1")
    (list op)
    (crc data)
-   (u16->bytes-be (length data))
+   (u16->bytes-be (+ 1 (length data)))
+   '(7)                                 ; destination program slot
    data))
 
 ;; Data to be encapsulated in serial packet:
